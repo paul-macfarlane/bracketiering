@@ -4,6 +4,25 @@ Derived from [Original Vision](./originalVision.md). Items are organized by epic
 
 ---
 
+## Epic: Tech Stack Setup
+
+### 0. Tech Stack Setup (MVP)
+
+**As a** developer, **I want to** set up the core tech stack **so that** I have a working local development environment to build features on.
+
+**Acceptance Criteria:**
+
+- Local Postgres 17 runs via Docker Compose
+- Drizzle ORM is installed and configured to connect to local Postgres
+- Drizzle Kit is available for migrations and schema management
+- ShadCN UI is initialized with Tailwind CSS
+- React Hook Form is installed
+- `pnpm dev` starts Next.js with a working connection to the local database
+- `pnpm db:push` (or equivalent) applies Drizzle schema to the local database
+- README or docs include instructions for getting started locally
+
+---
+
 ## Epic: Auth
 
 ### 1. Social Login (MVP)
@@ -244,6 +263,7 @@ Derived from [Original Vision](./originalVision.md). Items are organized by epic
 
 | #   | Story                              | Epic               | MVP |
 | --- | ---------------------------------- | ------------------ | --- |
+| 0   | Tech Stack Setup                   | Tech Stack Setup   | Yes |
 | 1   | Social Login                       | Auth               | Yes |
 | 2   | Profile Management                 | Profile            | Yes |
 | 3   | Account Deletion                   | Account            | Yes |
@@ -262,4 +282,4 @@ Derived from [Original Vision](./originalVision.md). Items are organized by epic
 | 16  | Bracket Pool Public/Private Toggle | Public Pools       | No  |
 | 17  | Public Pool Search                 | Public Pools       | No  |
 
-**MVP Total: 13 stories** | **Post-MVP: 4 stories**
+**MVP Total: 14 stories** | **Post-MVP: 4 stories**
