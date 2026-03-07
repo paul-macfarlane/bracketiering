@@ -246,7 +246,18 @@ Derived from [Original Vision](./originalVision.md). Items are organized by epic
 - Public pools appear in search results
 - Toggle available at creation and in settings
 
-### 17. Public Pool Search (Non-MVP) — Epic: Public Pools
+### 17. Theme Toggle (Non-MVP) — Epic: UX
+
+**As a** user, **I want to** switch between light, dark, and system theme modes **so that** I can use the app comfortably in any lighting condition.
+
+**Acceptance Criteria:**
+
+- User can toggle between light, dark, and system theme modes
+- Theme preference persists across sessions (via next-themes)
+- Toggle is accessible from the user dropdown menu (desktop) and mobile navigation menu
+- System mode automatically follows the user's OS preference
+
+### 18. Public Pool Search (Non-MVP) — Epic: Public Pools
 
 **As a** user, **I want to** search for public pools **so that** I can find and join open competitions.
 
@@ -280,6 +291,7 @@ Derived from [Original Vision](./originalVision.md). Items are organized by epic
 | 14  | Manage Bracket Scoring Settings    | Pool Settings      | No  |
 | 15  | In-App User Invites                | Pool Members       | No  |
 | 16  | Bracket Pool Public/Private Toggle | Public Pools       | No  |
-| 17  | Public Pool Search                 | Public Pools       | No  |
+| 17  | Theme Toggle                       | UX                 | No  |
+| 18  | Public Pool Search                 | Public Pools       | No  |
 
-**MVP Total: 14 stories** | **Post-MVP: 4 stories**
+**MVP Total: 14 stories** | **Post-MVP: 5 stories**

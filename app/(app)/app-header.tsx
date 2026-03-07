@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Menu, User, Settings, LogOut } from "lucide-react";
+import {
+  ThemeToggleDropdown,
+  ThemeToggleMobile,
+} from "@/components/theme-toggle";
 
 import { authClient } from "@/lib/auth/client";
 import type { Session } from "@/lib/auth";
@@ -93,6 +97,7 @@ export function AppHeader({ session }: AppHeaderProps) {
                   Settings
                 </Link>
               </DropdownMenuItem>
+              <ThemeToggleDropdown />
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleSignOut}
@@ -180,6 +185,10 @@ export function AppHeader({ session }: AppHeaderProps) {
                     Sign Out
                   </button>
                 </nav>
+
+                <Separator />
+
+                <ThemeToggleMobile />
               </div>
             </SheetContent>
           </Sheet>
