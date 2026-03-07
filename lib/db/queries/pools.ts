@@ -83,3 +83,51 @@ export async function getPoolById(poolId: string, userId: string) {
     memberCount: memberCountResult.count,
   };
 }
+
+interface UpdatePoolData {
+  name: string;
+  imageUrl?: string | null;
+  maxBracketsPerUser: number;
+  maxParticipants: number;
+}
+
+export async function updatePool(poolId: string, data: UpdatePoolData) {
+  const [updated] = await db
+    .update(pool)
+    .set({
+      name: data.name,
+      imageUrl: data.imageUrl || null,
+      maxBracketsPerUser: data.maxBracketsPerUser,
+      maxParticipants: data.maxParticipants,
+    })
+    .where(eq(pool.id, poolId))
+    .returning();
+
+  return updated;
+}
+
+export async function getPoolMemberCount(poolId: string) {
+  const [result] = await db
+    .select({ count: count() })
+    .from(poolMember)
+    .where(eq(poolMember.poolId, poolId));
+
+  return result.count;
+}
+
+export async function deletePool(poolId: string) {
+  await db.delete(pool).where(eq(pool.id, poolId));
+}
+
+// TODO: Implement once bracket entries exist (Story #8)
+export async function getMaxBracketCountInPool(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  poolId: string,
+): Promise<number> {
+  return 0;
+}
+
+// TODO: Implement once sports data sync exists (Story #6)
+export async function hasTournamentStarted(): Promise<boolean> {
+  return false;
+}

@@ -49,14 +49,12 @@ export default async function PoolsPage() {
           {pools.map((pool) => (
             <Link key={pool.id} href={`/pools/${pool.id}`} className="h-full">
               <Card className="flex h-full flex-col overflow-hidden transition-colors hover:border-foreground/20">
-                {pool.imageUrl && (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={pool.imageUrl}
-                    alt={pool.name}
-                    className="h-32 w-full object-cover"
-                  />
-                )}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={pool.imageUrl || "/bracket.webp"}
+                  alt={pool.name}
+                  className="h-32 w-full object-cover"
+                />
                 <CardHeader>
                   <CardTitle className="text-lg">{pool.name}</CardTitle>
                   <CardDescription>

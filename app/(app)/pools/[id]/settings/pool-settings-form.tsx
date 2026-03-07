@@ -6,11 +6,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import {
-  createPoolSchema,
+  buildUpdatePoolSchema,
   POOL_LIMITS,
-  type CreatePoolFormValues,
+  type UpdatePoolFormValues,
 } from "@/lib/validators/pool";
-import { createPool } from "./actions";
+import { updatePoolSettings } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,25 +25,42 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { DEFAULT_SCORING } from "@/lib/scoring";
 
-export function CreatePoolForm() {
+interface PoolSettingsFormProps {
+  poolId: string;
+  defaultValues: {
+    name: string;
+    imageUrl: string;
+    maxBracketsPerUser: number;
+    maxParticipants: number;
+  };
+  memberCount: number;
+  maxBracketCountInPool: number;
+}
+
+export function PoolSettingsForm({
+  poolId,
+  defaultValues,
+  memberCount,
+  maxBracketCountInPool,
+}: PoolSettingsFormProps) {
   const [isPending, setIsPending] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  const form = useForm<CreatePoolFormValues>({
-    resolver: zodResolver(createPoolSchema),
-    defaultValues: {
-      name: "",
-      imageUrl: "",
-      maxBracketsPerUser: POOL_LIMITS.bracketsPerUser.default,
-      maxParticipants: POOL_LIMITS.participants.default,
-    },
+  const schema = buildUpdatePoolSchema(memberCount, maxBracketCountInPool);
+
+  const form = useForm<UpdatePoolFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues,
   });
 
-  const watchedImageUrl = useWatch({ control: form.control, name: "imageUrl" });
+  const watchedImageUrl = useWatch({
+    control: form.control,
+    name: "imageUrl",
+  });
 
-  async function onSubmit(values: CreatePoolFormValues) {
+  async function onSubmit(values: UpdatePoolFormValues) {
     setIsPending(true);
-    const result = await createPool(values);
+    const result = await updatePoolSettings(poolId, values);
     if (result?.error) {
       toast.error(result.error);
     }
@@ -118,15 +135,19 @@ export function CreatePoolForm() {
                 <FormControl>
                   <Input
                     type="number"
-                    min={POOL_LIMITS.bracketsPerUser.min}
+                    min={Math.max(
+                      POOL_LIMITS.bracketsPerUser.min,
+                      maxBracketCountInPool,
+                    )}
                     max={POOL_LIMITS.bracketsPerUser.max}
                     {...field}
                     onChange={(e) => field.onChange(e.target.valueAsNumber)}
                   />
                 </FormControl>
                 <FormDescription>
-                  {POOL_LIMITS.bracketsPerUser.min}-
-                  {POOL_LIMITS.bracketsPerUser.max}
+                  {maxBracketCountInPool > POOL_LIMITS.bracketsPerUser.min
+                    ? `${maxBracketCountInPool}-${POOL_LIMITS.bracketsPerUser.max} (min set by existing brackets)`
+                    : `${POOL_LIMITS.bracketsPerUser.min}-${POOL_LIMITS.bracketsPerUser.max}`}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -142,14 +163,16 @@ export function CreatePoolForm() {
                 <FormControl>
                   <Input
                     type="number"
-                    min={POOL_LIMITS.participants.min}
+                    min={Math.max(POOL_LIMITS.participants.min, memberCount)}
                     max={POOL_LIMITS.participants.max}
                     {...field}
                     onChange={(e) => field.onChange(e.target.valueAsNumber)}
                   />
                 </FormControl>
                 <FormDescription>
-                  {POOL_LIMITS.participants.min}-{POOL_LIMITS.participants.max}
+                  {memberCount > POOL_LIMITS.participants.min
+                    ? `${memberCount}-${POOL_LIMITS.participants.max} (min set by current members)`
+                    : `${POOL_LIMITS.participants.min}-${POOL_LIMITS.participants.max}`}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -160,7 +183,10 @@ export function CreatePoolForm() {
         <Separator />
 
         <div>
-          <h3 className="mb-3 text-sm font-medium">Default Scoring</h3>
+          <h3 className="mb-3 text-sm font-medium">Scoring</h3>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Scoring customization will be available in a future update.
+          </p>
           <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">First Four</span>
@@ -195,7 +221,7 @@ export function CreatePoolForm() {
 
         <div className="pt-2">
           <Button type="submit" disabled={isPending} className="w-full">
-            {isPending ? "Creating..." : "Create Pool"}
+            {isPending ? "Saving..." : "Save Settings"}
           </Button>
         </div>
       </form>
