@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Menu, User, LogOut } from "lucide-react";
+import { Menu, User, Settings, LogOut } from "lucide-react";
 
 import { authClient } from "@/lib/auth/client";
 import type { Session } from "@/lib/auth";
@@ -87,6 +87,12 @@ export function AppHeader({ session }: AppHeaderProps) {
                   Profile
                 </Link>
               </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings" className="cursor-pointer">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleSignOut}
@@ -157,6 +163,14 @@ export function AppHeader({ session }: AppHeaderProps) {
                   >
                     <User className="h-4 w-4" />
                     Profile
+                  </Link>
+                  <Link
+                    href="/settings"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Settings
                   </Link>
                   <button
                     onClick={handleSignOut}
