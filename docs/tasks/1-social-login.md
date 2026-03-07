@@ -42,7 +42,7 @@
 - `lib/auth/username.ts`: Generates unique usernames from email using `unique-username-generator`, retries up to 10 times, falls back to timestamp suffix
 - `lib/db/auth-schema.ts`: Auto-generated Better Auth schema (user, session, account, verification tables + relations)
 - `lib/db/schema.ts`: Re-exports all auth schema tables (replaced placeholder health_check table)
-- `lib/env.ts`: Added auth-related env var validation (BETTER*AUTH_URL, BETTER_AUTH_SECRET, GOOGLE*_, DISCORD\__)
+- `lib/env.ts`: Added auth-related env var validation (BETTER*AUTH_URL, BETTER_AUTH_SECRET, GOOGLE*\_, DISCORD\_\_)
 - `.env.example`: Added all auth env var placeholders with setup links
 - `.env.local`: Added auth env var placeholders for local dev
 - `app/api/auth/[...all]/route.ts`: Better Auth catch-all route handler
