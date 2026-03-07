@@ -6,6 +6,7 @@ import {
   timestamp,
   index,
   pgEnum,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
 import { DEFAULT_SCORING } from "@/lib/scoring";
@@ -72,8 +73,36 @@ export const poolMember = pgTable(
   ],
 );
 
+export const poolInvite = pgTable(
+  "pool_invite",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    code: text("code")
+      .notNull()
+      .$defaultFn(() => crypto.randomUUID()),
+    poolId: text("pool_id")
+      .notNull()
+      .references(() => pool.id, { onDelete: "cascade" }),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    role: poolMemberRoleEnum("role").notNull().default("member"),
+    maxUses: integer("max_uses"),
+    useCount: integer("use_count").notNull().default(0),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("pool_invite_code_idx").on(table.code),
+    index("pool_invite_pool_id_idx").on(table.poolId),
+  ],
+);
+
 export const poolRelations = relations(pool, ({ many }) => ({
   members: many(poolMember),
+  invites: many(poolInvite),
 }));
 
 export const poolMemberRelations = relations(poolMember, ({ one }) => ({
@@ -83,6 +112,17 @@ export const poolMemberRelations = relations(poolMember, ({ one }) => ({
   }),
   user: one(user, {
     fields: [poolMember.userId],
+    references: [user.id],
+  }),
+}));
+
+export const poolInviteRelations = relations(poolInvite, ({ one }) => ({
+  pool: one(pool, {
+    fields: [poolInvite.poolId],
+    references: [pool.id],
+  }),
+  creator: one(user, {
+    fields: [poolInvite.createdBy],
     references: [user.id],
   }),
 }));

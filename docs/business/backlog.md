@@ -132,7 +132,7 @@ Derived from [Original Vision](./originalVision.md). Items are organized by epic
 
 **Acceptance Criteria:**
 
-- Any pool member can generate a shareable invite link
+- Only pool leaders can generate and manage shareable invite links
 - Invite link has a configurable expiration (default: 7 days)
 - Invite link has configurable max uses (default: remaining pool capacity)
 - Invite link can specify a role for joiners (member or leader)

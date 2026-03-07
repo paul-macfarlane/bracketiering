@@ -3,11 +3,11 @@
 import { authClient } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
 
-export function LoginButtons() {
+export function LoginButtons({ callbackUrl }: { callbackUrl?: string }) {
   const handleSignIn = (provider: "google" | "discord") => {
     authClient.signIn.social({
       provider,
-      callbackURL: "/dashboard",
+      callbackURL: callbackUrl ?? "/dashboard",
     });
   };
 

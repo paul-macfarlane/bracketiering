@@ -11,6 +11,8 @@ export {
 export {
   pool,
   poolMember,
+  poolInvite,
   poolRelations,
   poolMemberRelations,
+  poolInviteRelations,
 } from "./pool-schema";
