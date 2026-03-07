@@ -2,11 +2,17 @@ type PoolMemberRole = "leader" | "member";
 
 // --- Pool Actions (server actions / mutations) ---
 
-export type PoolAction = "update-settings" | "delete-pool";
+export type PoolAction =
+  | "update-settings"
+  | "delete-pool"
+  | "create-invite"
+  | "delete-invite";
 
 const poolActionPermissions: Record<PoolAction, Set<PoolMemberRole>> = {
   "update-settings": new Set(["leader"]),
   "delete-pool": new Set(["leader"]),
+  "create-invite": new Set(["leader"]),
+  "delete-invite": new Set(["leader"]),
 };
 
 export function canPerformPoolAction(

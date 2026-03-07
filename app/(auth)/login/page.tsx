@@ -4,13 +4,19 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { LoginButtons } from "./login-buttons";
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
+  const { callbackUrl } = await searchParams;
+
   if (session) {
-    redirect("/dashboard");
+    redirect(callbackUrl ?? "/dashboard");
   }
 
   return (
@@ -22,7 +28,7 @@ export default async function LoginPage() {
             Sign in to start competing
           </p>
         </div>
-        <LoginButtons />
+        <LoginButtons callbackUrl={callbackUrl} />
       </div>
     </div>
   );

@@ -15,6 +15,13 @@
       "when": 1772846135757,
       "tag": "0001_natural_amphibian",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772857290635,
+      "tag": "0002_special_christian_walker",
+      "breakpoints": true
     }
   ]
 }

@@ -4,7 +4,11 @@ import Link from "next/link";
 
 import { auth } from "@/lib/auth";
 import { getPoolById } from "@/lib/db/queries/pools";
-import { canAccessPoolPage } from "@/lib/permissions/pools";
+import { getPoolInvitesByPoolId } from "@/lib/db/queries/pool-invites";
+import {
+  canAccessPoolPage,
+  canPerformPoolAction,
+} from "@/lib/permissions/pools";
 import {
   Card,
   CardContent,
@@ -13,6 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { InviteList } from "./invites/invite-list";
 
 export default async function PoolDetailPage({
   params,
@@ -34,6 +39,14 @@ export default async function PoolDetailPage({
   if (!poolData) {
     notFound();
   }
+
+  const isLeader = canPerformPoolAction(
+    poolData.membership.role,
+    "create-invite",
+  );
+  const invites = isLeader ? await getPoolInvitesByPoolId(id) : [];
+  const remainingCapacity =
+    poolData.pool.maxParticipants - poolData.memberCount;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -87,6 +100,15 @@ export default async function PoolDetailPage({
           </div>
         </CardContent>
       </Card>
+      {isLeader && (
+        <div className="mt-6">
+          <InviteList
+            poolId={id}
+            invites={invites}
+            remainingCapacity={remainingCapacity}
+          />
+        </div>
+      )}
     </div>
   );
 }
