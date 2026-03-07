@@ -8,6 +8,13 @@
       "when": 1772839356602,
       "tag": "0000_steady_songbird",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772846135757,
+      "tag": "0001_natural_amphibian",
+      "breakpoints": true
     }
   ]
 }

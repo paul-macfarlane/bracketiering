@@ -54,15 +54,22 @@ Keep entries short. Only log decisions where the "why" isn't obvious from the co
 
 ## 3. Pre-Review Checklist
 
-Before marking a task `ready-for-review`, verify:
+Before marking a task `ready-for-review`, run the following commands and fix any issues:
+
+1. `pnpm format` — auto-format all files with Prettier
+2. `pnpm lint` — must pass with zero errors and zero warnings
+3. `pnpm build` — must compile with zero TypeScript errors
+
+Then verify:
 
 - [ ] All acceptance criteria from `docs/business/backlog.md` are met
 - [ ] Code follows `docs/technical/standards.md`
 - [ ] No unrelated changes included
 - [ ] New/changed functionality has tests
 - [ ] Existing tests still pass (`pnpm test` or equivalent)
-- [ ] TypeScript compiles without errors (`pnpm build`)
-- [ ] Linting passes (`pnpm lint`)
+- [ ] `pnpm format` has been run
+- [ ] `pnpm lint` passes with zero errors/warnings
+- [ ] `pnpm build` compiles without errors
 
 Add the results to the task file:
 
@@ -70,8 +77,9 @@ Add the results to the task file:
 ## Verification
 
 - Tests: pass/fail (details)
-- Build: pass/fail
+- Format: run
 - Lint: pass/fail
+- Build: pass/fail
 - Acceptance criteria: all met / <list gaps>
 ```
 

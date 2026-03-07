@@ -16,11 +16,13 @@
 ## Decisions
 
 ### Anonymize instead of hard-delete
+
 **Context:** AC says "All user activity (brackets, pool membership) is anonymized (not hard-deleted) so pool data integrity is maintained"
 **Decision:** Anonymize user record (name → "Deleted User", email → `deleted-{id}@deleted.local`, username → null, image → null) and hard-delete sessions + accounts. Do not use Better Auth's built-in `deleteUser` which hard-deletes.
 **Alternatives considered:** Better Auth's built-in deleteUser (hard deletes the row, would break future FK references from brackets/pools)
 
 ### Confirmation via typing "DELETE"
+
 **Context:** AC says "Deletion requires confirmation (e.g., type 'DELETE' or confirm dialog)"
 **Decision:** Require user to type "DELETE" in an input field, which is more intentional than a simple confirm dialog.
 **Alternatives considered:** Browser confirm dialog (too easy to click through accidentally)

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Menu, User, Settings, LogOut } from "lucide-react";
 import {
@@ -34,10 +34,14 @@ interface AppHeaderProps {
   session: Session;
 }
 
-const navLinks = [{ href: "/dashboard", label: "Dashboard" }] as const;
+const navLinks = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/pools", label: "Pools" },
+] as const;
 
 export function AppHeader({ session }: AppHeaderProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -57,15 +61,19 @@ export function AppHeader({ session }: AppHeaderProps) {
             BRacketiering
           </Link>
           <nav className="hidden items-center gap-4 md:flex">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const isActive =
+                pathname === link.href || pathname.startsWith(link.href + "/");
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-sm transition-colors hover:text-foreground ${isActive ? "font-medium text-foreground" : "text-muted-foreground"}`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </nav>
         </div>
 
@@ -86,13 +94,19 @@ export function AppHeader({ session }: AppHeaderProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem asChild>
-                <Link href="/profile" className="cursor-pointer">
+                <Link
+                  href="/profile"
+                  className={`cursor-pointer ${pathname === "/profile" ? "font-medium" : ""}`}
+                >
                   <User className="mr-2 h-4 w-4" />
                   Profile
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/settings" className="cursor-pointer">
+                <Link
+                  href="/settings"
+                  className={`cursor-pointer ${pathname === "/settings" ? "font-medium" : ""}`}
+                >
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </Link>
@@ -145,16 +159,21 @@ export function AppHeader({ session }: AppHeaderProps) {
 
                 {/* Nav links */}
                 <nav className="flex flex-col gap-1">
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setMobileOpen(false)}
-                      className="rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent"
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
+                  {navLinks.map((link) => {
+                    const isActive =
+                      pathname === link.href ||
+                      pathname.startsWith(link.href + "/");
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent ${isActive ? "bg-accent font-medium" : ""}`}
+                      >
+                        {link.label}
+                      </Link>
+                    );
+                  })}
                 </nav>
 
                 <Separator />
@@ -164,7 +183,7 @@ export function AppHeader({ session }: AppHeaderProps) {
                   <Link
                     href="/profile"
                     onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent"
+                    className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent ${pathname === "/profile" ? "bg-accent font-medium" : ""}`}
                   >
                     <User className="h-4 w-4" />
                     Profile
@@ -172,7 +191,7 @@ export function AppHeader({ session }: AppHeaderProps) {
                   <Link
                     href="/settings"
                     onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent"
+                    className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent ${pathname === "/settings" ? "bg-accent font-medium" : ""}`}
                   >
                     <Settings className="h-4 w-4" />
                     Settings

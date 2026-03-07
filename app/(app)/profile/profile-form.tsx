@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -50,8 +50,8 @@ export function ProfileForm({ defaultValues }: ProfileFormProps) {
     defaultValues,
   });
 
-  const watchedImage = form.watch("image");
-  const watchedName = form.watch("name");
+  const watchedImage = useWatch({ control: form.control, name: "image" });
+  const watchedName = useWatch({ control: form.control, name: "name" });
 
   async function onSubmit(values: ProfileFormValues) {
     setIsPending(true);

@@ -51,8 +51,9 @@ export function DeleteAccountForm() {
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="confirmation">
-            Type <span className="font-mono font-bold">{CONFIRMATION_TEXT}</span>{" "}
-            to confirm
+            Type{" "}
+            <span className="font-mono font-bold">{CONFIRMATION_TEXT}</span> to
+            confirm
           </Label>
           <Input
             id="confirmation"

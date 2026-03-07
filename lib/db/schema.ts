@@ -7,3 +7,10 @@ export {
   sessionRelations,
   accountRelations,
 } from "./auth-schema";
+
+export {
+  pool,
+  poolMember,
+  poolRelations,
+  poolMemberRelations,
+} from "./pool-schema";
