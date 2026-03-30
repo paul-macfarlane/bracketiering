@@ -11,7 +11,9 @@ import {
 import {
   calculateBracketScores,
   sortAndRankStandings,
+  isFinalFourMode,
   type PoolScoring,
+  type ScenarioData,
 } from "@/lib/scoring";
 
 interface CreateBracketEntryData {
@@ -311,7 +313,10 @@ export async function getPoolStandings(
   poolId: string,
   tournamentId: string,
   poolScoring: PoolScoring,
-) {
+): Promise<{
+  standings: ReturnType<typeof sortAndRankStandings<StandingsEntryWithMeta>>;
+  scenarioData: ScenarioData | null;
+}> {
   // Get bracket entries: all submitted + current user's drafts
   const entries = await db
     .select({
@@ -334,7 +339,7 @@ export async function getPoolStandings(
       ),
     );
 
-  if (entries.length === 0) return [];
+  if (entries.length === 0) return { standings: [], scenarioData: null };
 
   // Fetch all games and picks to compute live scores
   const games = await db
@@ -347,6 +352,8 @@ export async function getPoolStandings(
       team2Id: tournamentGame.team2Id,
       team1Score: tournamentGame.team1Score,
       team2Score: tournamentGame.team2Score,
+      sourceGame1Id: tournamentGame.sourceGame1Id,
+      sourceGame2Id: tournamentGame.sourceGame2Id,
     })
     .from(tournamentGame)
     .where(eq(tournamentGame.tournamentId, tournamentId));
@@ -485,5 +492,63 @@ export async function getPoolStandings(
     };
   });
 
-  return sortAndRankStandings(entriesWithScores);
+  const standings = sortAndRankStandings(entriesWithScores);
+
+  // Build scenario data if in Final Four mode
+  let scenarioData: ScenarioData | null = null;
+  if (isFinalFourMode(games)) {
+    const remainingGames = games
+      .filter(
+        (g) =>
+          (g.round === "final_four" || g.round === "championship") &&
+          g.status !== "final",
+      )
+      .map((g) => ({
+        id: g.id,
+        round: g.round,
+        team1Id: g.team1Id,
+        team2Id: g.team2Id,
+        team1SourceGameId: g.sourceGame1Id,
+        team2SourceGameId: g.sourceGame2Id,
+      }));
+
+    const remainingGameIds = new Set(remainingGames.map((g) => g.id));
+    const entryPicks: Record<string, Record<string, string>> = {};
+    for (const pick of allPicks) {
+      if (!remainingGameIds.has(pick.tournamentGameId)) continue;
+      if (!entryPicks[pick.bracketEntryId]) {
+        entryPicks[pick.bracketEntryId] = {};
+      }
+      entryPicks[pick.bracketEntryId][pick.tournamentGameId] =
+        pick.pickedTeamId;
+    }
+
+    scenarioData = { remainingGames, entryPicks };
+  }
+
+  return { standings, scenarioData };
 }
+
+type StandingsEntryWithMeta = {
+  id: string;
+  name: string;
+  status: string;
+  tiebreakerScore: number | null;
+  userId: string;
+  userName: string;
+  userImage: string | null;
+  userUsername: string | null;
+  totalPoints: number;
+  potentialPoints: number;
+  championPick: {
+    bracketEntryId: string;
+    pickedTeamId: string;
+    teamName: string;
+    teamShortName: string;
+    teamMascot: string | null;
+    teamLogoUrl: string | null;
+    teamDarkLogoUrl: string | null;
+  } | null;
+  isChampionEliminated: boolean;
+  tiebreakerDiff: number | null;
+};

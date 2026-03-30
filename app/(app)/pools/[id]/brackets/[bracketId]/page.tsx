@@ -21,7 +21,11 @@ import {
 import { BracketEditor } from "@/components/bracket/bracket-editor";
 import { BracketViewer } from "@/components/bracket/bracket-viewer";
 import type { BracketTeam } from "@/components/bracket/types";
-import { getEliminationStatus, type PoolScoring } from "@/lib/scoring";
+import {
+  getEliminationStatus,
+  getScenarioEliminationStatus,
+  type PoolScoring,
+} from "@/lib/scoring";
 
 export default async function BracketPage({
   params,
@@ -161,7 +165,7 @@ export default async function BracketPage({
     potentialPoints: number;
   } | null = null;
   if (entry.status === "submitted") {
-    const standings = await getPoolStandings(
+    const { standings, scenarioData } = await getPoolStandings(
       poolId,
       entry.tournamentId,
       poolScoring,
@@ -172,7 +176,9 @@ export default async function BracketPage({
     }
 
     if (tournamentStarted && standings.length > 0) {
-      const eliminationMap = getEliminationStatus(standings, 1);
+      const eliminationMap = scenarioData
+        ? getScenarioEliminationStatus(standings, scenarioData, poolScoring, 1)
+        : getEliminationStatus(standings, 1);
       const idx = standings.findIndex((s) => s.id === bracketId);
       if (idx !== -1) {
         const leaderPoints = Math.max(...standings.map((s) => s.totalPoints));

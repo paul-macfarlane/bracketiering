@@ -16,13 +16,19 @@ import { UserDisplay } from "@/components/user-display";
 import { TeamLogo } from "@/components/team-logo";
 import { EliminationBadge } from "@/components/pool/elimination-badge";
 import { MovementIndicator } from "@/components/pool/movement-indicator";
-import { getEliminationStatus } from "@/lib/scoring";
+import {
+  getEliminationStatus,
+  getScenarioEliminationStatus,
+  type ScenarioData,
+  type PoolScoring,
+} from "@/lib/scoring";
 
 interface StandingsEntry {
   id: string;
   name: string;
   totalPoints: number;
   potentialPoints: number;
+  tiebreakerDiff: number | null;
   userId: string;
   userName: string;
   userImage: string | null;
@@ -50,6 +56,8 @@ interface StandingsTableProps {
   tournamentStarted?: boolean;
   movement?: Record<string, MovementData>;
   currentUserId?: string;
+  scenarioData?: ScenarioData | null;
+  poolScoring?: PoolScoring;
 }
 
 export function StandingsTable({
@@ -58,6 +66,8 @@ export function StandingsTable({
   tournamentStarted = false,
   movement,
   currentUserId,
+  scenarioData,
+  poolScoring,
 }: StandingsTableProps) {
   const [sortField, setSortField] = useState<SortField>("rank");
   const [topN, setTopN] = useState<1 | 2 | 3>(1);
@@ -72,8 +82,16 @@ export function StandingsTable({
 
   const eliminationMap = useMemo(() => {
     if (!tournamentStarted) return null;
+    if (scenarioData && poolScoring) {
+      return getScenarioEliminationStatus(
+        sorted,
+        scenarioData,
+        poolScoring,
+        topN,
+      );
+    }
     return getEliminationStatus(sorted, topN);
-  }, [sorted, topN, tournamentStarted]);
+  }, [sorted, topN, tournamentStarted, scenarioData, poolScoring]);
 
   function handleSort(field: SortField) {
     setSortField((prev) => (prev === field ? "rank" : field));

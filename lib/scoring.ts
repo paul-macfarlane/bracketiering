@@ -155,3 +155,181 @@ export function getEliminationStatus<
   }
   return result;
 }
+
+// --- Scenario-based elimination (Final Four onward) ---
+
+export interface RemainingGame {
+  id: string;
+  round: string;
+  team1Id: string | null;
+  team2Id: string | null;
+  /** For championship: the game whose winner becomes team1 */
+  team1SourceGameId: string | null;
+  /** For championship: the game whose winner becomes team2 */
+  team2SourceGameId: string | null;
+}
+
+export interface ScenarioData {
+  remainingGames: RemainingGame[];
+  /** entryId → { gameId → pickedTeamId } */
+  entryPicks: Record<string, Record<string, string>>;
+}
+
+/** A single scenario: gameId → winnerId */
+type Scenario = Map<string, string>;
+
+/**
+ * Check if we're in "Final Four mode": all Elite 8 games are final and
+ * at least one Final Four or Championship game is still pending.
+ */
+export function isFinalFourMode(
+  games: { round: string; status: string }[],
+): boolean {
+  const elite8Games = games.filter((g) => g.round === "elite_8");
+  if (elite8Games.length === 0) return false;
+  const allElite8Final = elite8Games.every((g) => g.status === "final");
+  if (!allElite8Final) return false;
+
+  const lateGames = games.filter(
+    (g) => g.round === "final_four" || g.round === "championship",
+  );
+  return lateGames.some((g) => g.status !== "final");
+}
+
+/**
+ * Enumerate all possible outcome scenarios for the remaining games.
+ * Handles the dependency where championship teams come from Final Four winners.
+ */
+export function generateScenarios(remainingGames: RemainingGame[]): Scenario[] {
+  const f4Games = remainingGames.filter((g) => g.round === "final_four");
+  const champGame = remainingGames.find((g) => g.round === "championship");
+
+  if (remainingGames.length === 0) return [];
+
+  // Generate F4 outcome combinations
+  let f4Combos: Scenario[] = [new Map()];
+  for (const game of f4Games) {
+    const next: Scenario[] = [];
+    for (const combo of f4Combos) {
+      if (game.team1Id) {
+        const c1 = new Map(combo);
+        c1.set(game.id, game.team1Id);
+        next.push(c1);
+      }
+      if (game.team2Id) {
+        const c2 = new Map(combo);
+        c2.set(game.id, game.team2Id);
+        next.push(c2);
+      }
+    }
+    f4Combos = next;
+  }
+
+  if (!champGame) return f4Combos;
+
+  // For each F4 combo, determine championship matchup and enumerate its outcomes
+  const scenarios: Scenario[] = [];
+  for (const combo of f4Combos) {
+    // Determine championship teams from F4 winners or pre-existing teams
+    const champTeam1 = champGame.team1SourceGameId
+      ? (combo.get(champGame.team1SourceGameId) ?? champGame.team1Id)
+      : champGame.team1Id;
+    const champTeam2 = champGame.team2SourceGameId
+      ? (combo.get(champGame.team2SourceGameId) ?? champGame.team2Id)
+      : champGame.team2Id;
+
+    const champOptions: string[] = [];
+    if (champTeam1) champOptions.push(champTeam1);
+    if (champTeam2) champOptions.push(champTeam2);
+
+    for (const winner of champOptions) {
+      const scenario = new Map(combo);
+      scenario.set(champGame.id, winner);
+      scenarios.push(scenario);
+    }
+  }
+
+  return scenarios;
+}
+
+/**
+ * Scenario-aware elimination: determines which entries are eliminated by
+ * checking if there's ANY remaining-game outcome where they finish in top N.
+ * Use this when in Final Four mode for accurate elimination detection that
+ * accounts for correlated picks.
+ */
+export function getScenarioEliminationStatus<
+  T extends {
+    id: string;
+    totalPoints: number;
+    potentialPoints: number;
+    name: string;
+    tiebreakerDiff: number | null;
+  },
+>(
+  entries: T[],
+  scenarioData: ScenarioData,
+  poolScoring: PoolScoring,
+  topN: number = 1,
+): Map<number, boolean> {
+  const scenarios = generateScenarios(scenarioData.remainingGames);
+
+  // If no scenarios (shouldn't happen if isFinalFourMode is true), fall back
+  if (scenarios.length === 0) {
+    return getEliminationStatus(entries, topN);
+  }
+
+  const result = new Map<number, boolean>();
+
+  // Pre-compute each entry's picks for remaining games
+  const entryPickMaps: Map<string, string>[] = entries.map((entry) => {
+    const picks = scenarioData.entryPicks[entry.id] ?? {};
+    return new Map(Object.entries(picks));
+  });
+
+  // Build a round lookup for remaining games
+  const gameRoundMap = new Map(
+    scenarioData.remainingGames.map((g) => [g.id, g.round]),
+  );
+
+  for (let i = 0; i < entries.length; i++) {
+    let canFinishInTopN = false;
+
+    for (const scenario of scenarios) {
+      // Compute projected scores for all entries in this scenario
+      const projected = entries.map((entry, j) => {
+        let score = entry.totalPoints;
+        const picks = entryPickMaps[j];
+        for (const [gameId, winnerId] of scenario) {
+          const pickedTeamId = picks.get(gameId);
+          if (pickedTeamId === winnerId) {
+            const round = gameRoundMap.get(gameId);
+            if (round) {
+              score += getPointsForRound(round, poolScoring);
+            }
+          }
+        }
+        return { name: entry.name, totalPoints: score };
+      });
+
+      // Count how many entries have strictly more points than entry i
+      const myPoints = projected[i].totalPoints;
+      let countAhead = 0;
+      for (let j = 0; j < projected.length; j++) {
+        if (j !== i && projected[j].totalPoints > myPoints) {
+          countAhead++;
+        }
+      }
+      // Ties: if tied on points, tiebreaker is unknown, so we conservatively
+      // treat the entry as NOT behind (they could win the tiebreaker)
+      if (countAhead < topN) {
+        canFinishInTopN = true;
+        break; // Found at least one scenario, no need to check more
+      }
+    }
+
+    result.set(i, !canFinishInTopN);
+  }
+
+  return result;
+}
