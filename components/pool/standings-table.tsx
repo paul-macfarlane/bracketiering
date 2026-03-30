@@ -58,6 +58,8 @@ interface StandingsTableProps {
   currentUserId?: string;
   scenarioData?: ScenarioData | null;
   poolScoring?: PoolScoring;
+  topN?: 1 | 2 | 3;
+  onTopNChange?: (n: 1 | 2 | 3) => void;
 }
 
 export function StandingsTable({
@@ -68,9 +70,13 @@ export function StandingsTable({
   currentUserId,
   scenarioData,
   poolScoring,
+  topN: externalTopN,
+  onTopNChange,
 }: StandingsTableProps) {
   const [sortField, setSortField] = useState<SortField>("rank");
-  const [topN, setTopN] = useState<1 | 2 | 3>(1);
+  const [internalTopN, setInternalTopN] = useState<1 | 2 | 3>(1);
+  const topN = externalTopN ?? internalTopN;
+  const setTopN = onTopNChange ?? setInternalTopN;
 
   const sorted = useMemo(() => {
     if (sortField === "rank") return standings;
@@ -193,7 +199,7 @@ export function StandingsTable({
                   <TableCell>
                     <Link
                       href={`/pools/${poolId}/brackets/${entry.id}`}
-                      className="font-medium hover:underline"
+                      className="font-medium underline decoration-muted-foreground decoration-1 underline-offset-2 hover:decoration-foreground"
                     >
                       {entry.name}
                     </Link>
