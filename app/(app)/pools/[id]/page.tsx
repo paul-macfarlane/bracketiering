@@ -46,7 +46,11 @@ import { StandingsTable } from "@/components/pool/standings-table";
 import { WhatINeedCard } from "@/components/pool/what-i-need-card";
 import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 import { StickySubHeader } from "@/components/sticky-sub-header";
-import { getEliminationStatus, type PoolScoring } from "@/lib/scoring";
+import {
+  getEliminationStatus,
+  getScenarioEliminationStatus,
+  type PoolScoring,
+} from "@/lib/scoring";
 
 export default async function PoolDetailPage({
   params,
@@ -119,9 +123,11 @@ export default async function PoolDetailPage({
     scoringChampionship: poolData.pool.scoringChampionship,
   };
 
-  const standings = activeTournament
+  const standingsResult = activeTournament
     ? await getPoolStandings(id, activeTournament.id, poolScoring)
-    : [];
+    : null;
+  const standings = standingsResult?.standings ?? [];
+  const scenarioData = standingsResult?.scenarioData ?? null;
 
   // Movement data for standings (only when tournament has started)
   const movementMap =
@@ -202,7 +208,9 @@ export default async function PoolDetailPage({
     { rank: number; totalPoints: number; potentialPoints: number }
   >();
   if (tournamentStarted && standings.length > 0) {
-    const eliminationMap = getEliminationStatus(standings, 1);
+    const eliminationMap = scenarioData
+      ? getScenarioEliminationStatus(standings, scenarioData, poolScoring, 1)
+      : getEliminationStatus(standings, 1);
     standings.forEach((s, i) => {
       const isEliminated = eliminationMap.get(i) ?? false;
       // Only set for user's brackets
@@ -279,6 +287,8 @@ export default async function PoolDetailPage({
               tournamentStarted={tournamentStarted}
               movement={movementData}
               currentUserId={session.user.id}
+              scenarioData={scenarioData}
+              poolScoring={poolScoring}
             />
           </CardContent>
         </Card>

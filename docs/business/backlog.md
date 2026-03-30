@@ -1271,6 +1271,39 @@ Stories below are ordered by priority. Completed stories are grouped at the end.
 - Existing tests are updated to reflect the new filtering behavior
 - If all games in a round are no-stake, that round group is omitted entirely
 
+### 82. Scenario-Aware Elimination Detection (Non-MVP) ✅ — Epic: Tournament Experience
+
+**As a** pool member, **I want** the elimination status to account for correlated picks (where competitors ahead of me also gain points from the same outcomes) **so that** the "Alive" / "Eliminated" indicator is accurate even when shared picks make it impossible to close the gap.
+
+**Acceptance Criteria:**
+
+- **Scenario-based elimination** replaces the simple ceiling-vs-floor check once the Final Four begins (i.e., when all Elite 8 games are final)
+- For each bracket entry, all possible remaining tournament outcome combinations are enumerated (at most 8 scenarios with 3 games left), and the entry's score is computed in each scenario against all other entries
+- An entry is marked "Eliminated" only if there is **no** scenario in which it finishes in the top N (where N corresponds to the Contention toggle: 1st, Top 2, Top 3)
+- The Contention toggle (1st, Top 2, Top 3) continues to work with the new logic
+- **Pre-Final Four**: the existing simple elimination check (`potentialPoints` vs `totalPoints`) remains in use
+- Existing elimination UI (badge, banner, opacity) works unchanged — only the underlying determination changes
+- Unit tests cover correlated-pick scenarios where the simple check would say "Alive" but the scenario check correctly says "Eliminated", and vice versa
+
+---
+
+### 83. Final Four Scenario Simulator (Non-MVP) — Epic: Tournament Experience
+
+**As a** pool member, **I want** to see all possible tournament outcome scenarios and the resulting standings once the Final Four is set **so that** I can understand exactly what needs to happen for my bracket to win (or finish top N).
+
+**Acceptance Criteria:**
+
+- **Appears on the pool detail page** as a new section once all Elite 8 games are final and at least one Final Four / Championship game is still pending
+- **Removed automatically** once the Championship game is final (tournament is over)
+- **Visible to all pool members** (not user-specific)
+- **Scenario enumeration**: all possible outcomes of remaining games are listed (8 scenarios with 3 games remaining, 4 with 2, 2 with 1)
+- **Summary row per entry (Option C UI)**: each bracket entry shows a compact summary — best possible finish, worst possible finish, and number of scenarios in which it wins (or finishes top N)
+- **Expandable detail**: users can expand to see the full standings for each individual scenario, including game outcomes (with team logos) and resulting rankings
+- **Points ties**: when entries are tied on points in a scenario, display "Tied on points — tiebreaker TBD" rather than guessing tiebreaker outcome
+- **Contention toggle integration**: the summary adapts to the selected contention level (1st, Top 2, Top 3) — e.g., "Finishes top 2 in 5/8 scenarios"
+- **Responsive**: works on both desktop and mobile layouts
+- **Scenario labels**: each scenario is labeled descriptively using the game outcomes (e.g., "Duke over Houston, UConn over Auburn, Duke over UConn")
+
 ---
 
 ## Summary
@@ -1358,5 +1391,7 @@ Stories below are ordered by priority. Completed stories are grouped at the end.
 | 79  | Hide No-Stake Games in What I Need        | Tournament Experience   | No  | Done   |
 | 80  | Bracket Connector Lines                   | Bracket UX Enhancements | No  | Done   |
 | 81  | Fix "Picked to" Off-by-One in What I Need | Bug Fixes               | No  | Done   |
+| 82  | Scenario-Aware Elimination Detection      | Tournament Experience   | No  | Done   |
+| 83  | Final Four Scenario Simulator             | Tournament Experience   | No  |        |
 
-**MVP Total: 21 stories (21 done, 0 remaining)** | **Post-MVP: 59 stories (44 done, 15 remaining)**
+**MVP Total: 21 stories (21 done, 0 remaining)** | **Post-MVP: 61 stories (45 done, 16 remaining)**

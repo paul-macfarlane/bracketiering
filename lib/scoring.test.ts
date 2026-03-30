@@ -4,8 +4,12 @@ import {
   getEliminationStatus,
   getPointsForRound,
   sortAndRankStandings,
+  isFinalFourMode,
+  generateScenarios,
+  getScenarioEliminationStatus,
   type PoolScoring,
   type StandingsEntry,
+  type ScenarioData,
 } from "./scoring";
 
 const DEFAULT_SCORING: PoolScoring = {
@@ -1534,5 +1538,413 @@ describe("getEliminationStatus", () => {
     expect(result.get(0)).toBe(false);
     expect(result.get(1)).toBe(false);
     expect(result.get(2)).toBe(false);
+  });
+});
+
+describe("isFinalFourMode", () => {
+  it("returns false when no elite 8 games exist", () => {
+    expect(isFinalFourMode([])).toBe(false);
+  });
+
+  it("returns false when elite 8 games are not all final", () => {
+    const games = [
+      { round: "elite_8", status: "final" },
+      { round: "elite_8", status: "final" },
+      { round: "elite_8", status: "scheduled" },
+      { round: "elite_8", status: "final" },
+      { round: "final_four", status: "scheduled" },
+    ];
+    expect(isFinalFourMode(games)).toBe(false);
+  });
+
+  it("returns true when all elite 8 final and F4 games pending", () => {
+    const games = [
+      { round: "elite_8", status: "final" },
+      { round: "elite_8", status: "final" },
+      { round: "elite_8", status: "final" },
+      { round: "elite_8", status: "final" },
+      { round: "final_four", status: "scheduled" },
+      { round: "final_four", status: "scheduled" },
+      { round: "championship", status: "scheduled" },
+    ];
+    expect(isFinalFourMode(games)).toBe(true);
+  });
+
+  it("returns true when F4 done but championship pending", () => {
+    const games = [
+      { round: "elite_8", status: "final" },
+      { round: "elite_8", status: "final" },
+      { round: "elite_8", status: "final" },
+      { round: "elite_8", status: "final" },
+      { round: "final_four", status: "final" },
+      { round: "final_four", status: "final" },
+      { round: "championship", status: "scheduled" },
+    ];
+    expect(isFinalFourMode(games)).toBe(true);
+  });
+
+  it("returns false when all games are final (tournament over)", () => {
+    const games = [
+      { round: "elite_8", status: "final" },
+      { round: "elite_8", status: "final" },
+      { round: "elite_8", status: "final" },
+      { round: "elite_8", status: "final" },
+      { round: "final_four", status: "final" },
+      { round: "final_four", status: "final" },
+      { round: "championship", status: "final" },
+    ];
+    expect(isFinalFourMode(games)).toBe(false);
+  });
+});
+
+describe("generateScenarios", () => {
+  it("returns empty for no remaining games", () => {
+    expect(generateScenarios([])).toEqual([]);
+  });
+
+  it("generates 2 scenarios for championship only", () => {
+    const games = [
+      {
+        id: "champ",
+        round: "championship",
+        team1Id: "A",
+        team2Id: "B",
+        team1SourceGameId: null,
+        team2SourceGameId: null,
+      },
+    ];
+    const scenarios = generateScenarios(games);
+    expect(scenarios).toHaveLength(2);
+    expect(scenarios[0].get("champ")).toBe("A");
+    expect(scenarios[1].get("champ")).toBe("B");
+  });
+
+  it("generates 8 scenarios for full final four", () => {
+    const games = [
+      {
+        id: "f4-1",
+        round: "final_four",
+        team1Id: "A",
+        team2Id: "B",
+        team1SourceGameId: null,
+        team2SourceGameId: null,
+      },
+      {
+        id: "f4-2",
+        round: "final_four",
+        team1Id: "C",
+        team2Id: "D",
+        team1SourceGameId: null,
+        team2SourceGameId: null,
+      },
+      {
+        id: "champ",
+        round: "championship",
+        team1Id: null,
+        team2Id: null,
+        team1SourceGameId: "f4-1",
+        team2SourceGameId: "f4-2",
+      },
+    ];
+    const scenarios = generateScenarios(games);
+    expect(scenarios).toHaveLength(8);
+
+    // Verify all unique combinations
+    const combos = scenarios.map(
+      (s) => `${s.get("f4-1")}-${s.get("f4-2")}-${s.get("champ")}`,
+    );
+    expect(new Set(combos).size).toBe(8);
+
+    // Championship teams should come from F4 winners
+    for (const s of scenarios) {
+      const champWinner = s.get("champ")!;
+      const f4_1_winner = s.get("f4-1")!;
+      const f4_2_winner = s.get("f4-2")!;
+      expect([f4_1_winner, f4_2_winner]).toContain(champWinner);
+    }
+  });
+
+  it("generates 4 scenarios when one F4 game is already decided", () => {
+    // Only F4-2 and championship remaining
+    const games = [
+      {
+        id: "f4-2",
+        round: "final_four",
+        team1Id: "C",
+        team2Id: "D",
+        team1SourceGameId: null,
+        team2SourceGameId: null,
+      },
+      {
+        id: "champ",
+        round: "championship",
+        team1Id: "A", // F4-1 winner already known
+        team2Id: null,
+        team1SourceGameId: null,
+        team2SourceGameId: "f4-2",
+      },
+    ];
+    const scenarios = generateScenarios(games);
+    expect(scenarios).toHaveLength(4);
+
+    // Championship should always have A as one participant
+    for (const s of scenarios) {
+      const champWinner = s.get("champ")!;
+      const f4_2_winner = s.get("f4-2")!;
+      expect(["A", f4_2_winner]).toContain(champWinner);
+    }
+  });
+});
+
+describe("getScenarioEliminationStatus", () => {
+  // Helper to create entries for scenario tests
+  function makeScenarioEntry(
+    id: string,
+    totalPoints: number,
+    potentialPoints: number,
+  ) {
+    return {
+      id,
+      totalPoints,
+      potentialPoints,
+      name: id,
+      tiebreakerDiff: null,
+    };
+  }
+
+  it("correlated picks: entry eliminated despite high potential (simple check would say alive)", () => {
+    // Scenario: championship game remaining. A is at 80, B is at 70.
+    // Both picked team X to win championship (32 pts).
+    // Simple check: B potential = 70+32 = 102 > A total 80 → "Alive"
+    // Scenario check: if X wins, A=112, B=102 → B still behind
+    //                 if Y wins, A=80, B=70 → B still behind
+    // B is eliminated in ALL scenarios.
+    const entries = [
+      makeScenarioEntry("A", 80, 112),
+      makeScenarioEntry("B", 70, 102),
+    ];
+    const scenarioData: ScenarioData = {
+      remainingGames: [
+        {
+          id: "champ",
+          round: "championship",
+          team1Id: "teamX",
+          team2Id: "teamY",
+          team1SourceGameId: null,
+          team2SourceGameId: null,
+        },
+      ],
+      entryPicks: {
+        A: { champ: "teamX" },
+        B: { champ: "teamX" },
+      },
+    };
+
+    // Simple check says alive (B potential 102 > A total 80)
+    const simpleResult = getEliminationStatus(entries, 1);
+    expect(simpleResult.get(1)).toBe(false); // simple says alive
+
+    // Scenario check correctly says eliminated
+    const scenarioResult = getScenarioEliminationStatus(
+      entries,
+      scenarioData,
+      DEFAULT_SCORING,
+      1,
+    );
+    expect(scenarioResult.get(0)).toBe(false); // A alive
+    expect(scenarioResult.get(1)).toBe(true); // B eliminated
+  });
+
+  it("different picks: entry alive when they have a winning scenario", () => {
+    // A at 80, B at 70. A picked teamX, B picked teamY for championship.
+    // If teamY wins: A=80, B=102 → B wins. B has a winning scenario.
+    const entries = [
+      makeScenarioEntry("A", 80, 112),
+      makeScenarioEntry("B", 70, 102),
+    ];
+    const scenarioData: ScenarioData = {
+      remainingGames: [
+        {
+          id: "champ",
+          round: "championship",
+          team1Id: "teamX",
+          team2Id: "teamY",
+          team1SourceGameId: null,
+          team2SourceGameId: null,
+        },
+      ],
+      entryPicks: {
+        A: { champ: "teamX" },
+        B: { champ: "teamY" },
+      },
+    };
+
+    const result = getScenarioEliminationStatus(
+      entries,
+      scenarioData,
+      DEFAULT_SCORING,
+      1,
+    );
+    expect(result.get(0)).toBe(false); // A alive (wins if teamX wins)
+    expect(result.get(1)).toBe(false); // B alive (wins if teamY wins)
+  });
+
+  it("full final four: correlated picks eliminate entry across all 8 scenarios", () => {
+    // A at 100, B at 90. Both have identical F4 and championship picks.
+    // B can never close the 10-point gap because every point B gets, A gets too.
+    const entries = [
+      makeScenarioEntry("A", 100, 148), // 100 + 16 + 16 + 32 = 164 potential
+      makeScenarioEntry("B", 90, 138),
+    ];
+    const scenarioData: ScenarioData = {
+      remainingGames: [
+        {
+          id: "f4-1",
+          round: "final_four",
+          team1Id: "t1",
+          team2Id: "t2",
+          team1SourceGameId: null,
+          team2SourceGameId: null,
+        },
+        {
+          id: "f4-2",
+          round: "final_four",
+          team1Id: "t3",
+          team2Id: "t4",
+          team1SourceGameId: null,
+          team2SourceGameId: null,
+        },
+        {
+          id: "champ",
+          round: "championship",
+          team1Id: null,
+          team2Id: null,
+          team1SourceGameId: "f4-1",
+          team2SourceGameId: "f4-2",
+        },
+      ],
+      entryPicks: {
+        // Both pick exactly the same
+        A: { "f4-1": "t1", "f4-2": "t3", champ: "t1" },
+        B: { "f4-1": "t1", "f4-2": "t3", champ: "t1" },
+      },
+    };
+
+    const result = getScenarioEliminationStatus(
+      entries,
+      scenarioData,
+      DEFAULT_SCORING,
+      1,
+    );
+    expect(result.get(0)).toBe(false); // A always ahead
+    expect(result.get(1)).toBe(true); // B always behind
+  });
+
+  it("top 2 contention: entry alive if they can finish in top 2 in any scenario", () => {
+    // A=100, B=95, C=80. Championship remaining.
+    // A picked teamX, B picked teamX, C picked teamY.
+    // If teamY wins: A=100, B=95, C=112 → C is 1st, so top 2 = C, A. B is 3rd.
+    // If teamX wins: A=132, B=127, C=80 → top 2 = A, B. C is 3rd.
+    // C finishes top 2 in one scenario → alive for top 2.
+    const entries = [
+      makeScenarioEntry("A", 100, 132),
+      makeScenarioEntry("B", 95, 127),
+      makeScenarioEntry("C", 80, 112),
+    ];
+    const scenarioData: ScenarioData = {
+      remainingGames: [
+        {
+          id: "champ",
+          round: "championship",
+          team1Id: "teamX",
+          team2Id: "teamY",
+          team1SourceGameId: null,
+          team2SourceGameId: null,
+        },
+      ],
+      entryPicks: {
+        A: { champ: "teamX" },
+        B: { champ: "teamX" },
+        C: { champ: "teamY" },
+      },
+    };
+
+    const result = getScenarioEliminationStatus(
+      entries,
+      scenarioData,
+      DEFAULT_SCORING,
+      2,
+    );
+    expect(result.get(0)).toBe(false); // A top 2 in both
+    expect(result.get(1)).toBe(false); // B top 2 when teamX wins
+    expect(result.get(2)).toBe(false); // C top 2 when teamY wins
+  });
+
+  it("ties are treated conservatively (entry not eliminated if tied)", () => {
+    // A=80, B=80. Both picked same team. Tied in every scenario.
+    // Neither should be eliminated since tiebreaker is unknown.
+    const entries = [
+      makeScenarioEntry("A", 80, 112),
+      makeScenarioEntry("B", 80, 112),
+    ];
+    const scenarioData: ScenarioData = {
+      remainingGames: [
+        {
+          id: "champ",
+          round: "championship",
+          team1Id: "teamX",
+          team2Id: "teamY",
+          team1SourceGameId: null,
+          team2SourceGameId: null,
+        },
+      ],
+      entryPicks: {
+        A: { champ: "teamX" },
+        B: { champ: "teamX" },
+      },
+    };
+
+    const result = getScenarioEliminationStatus(
+      entries,
+      scenarioData,
+      DEFAULT_SCORING,
+      1,
+    );
+    expect(result.get(0)).toBe(false);
+    expect(result.get(1)).toBe(false);
+  });
+
+  it("entry with no picks for remaining games still scored correctly", () => {
+    // A=80 with championship pick, B=70 with no picks for remaining games.
+    // B's max is always 70. If teamX wins, A=112 > 70. If teamY wins, A=80 > 70.
+    const entries = [
+      makeScenarioEntry("A", 80, 112),
+      makeScenarioEntry("B", 70, 70),
+    ];
+    const scenarioData: ScenarioData = {
+      remainingGames: [
+        {
+          id: "champ",
+          round: "championship",
+          team1Id: "teamX",
+          team2Id: "teamY",
+          team1SourceGameId: null,
+          team2SourceGameId: null,
+        },
+      ],
+      entryPicks: {
+        A: { champ: "teamX" },
+        // B has no picks for remaining games
+      },
+    };
+
+    const result = getScenarioEliminationStatus(
+      entries,
+      scenarioData,
+      DEFAULT_SCORING,
+      1,
+    );
+    expect(result.get(0)).toBe(false);
+    expect(result.get(1)).toBe(true);
   });
 });
