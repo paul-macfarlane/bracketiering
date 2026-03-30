@@ -1392,6 +1392,6 @@ Stories below are ordered by priority. Completed stories are grouped at the end.
 | 80  | Bracket Connector Lines                   | Bracket UX Enhancements | No  | Done   |
 | 81  | Fix "Picked to" Off-by-One in What I Need | Bug Fixes               | No  | Done   |
 | 82  | Scenario-Aware Elimination Detection      | Tournament Experience   | No  | Done   |
-| 83  | Final Four Scenario Simulator             | Tournament Experience   | No  |        |
+| 83  | Final Four Scenario Simulator             | Tournament Experience   | No  | Done   |
 
 **MVP Total: 21 stories (21 done, 0 remaining)** | **Post-MVP: 61 stories (45 done, 16 remaining)**

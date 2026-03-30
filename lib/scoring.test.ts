@@ -7,6 +7,8 @@ import {
   isFinalFourMode,
   generateScenarios,
   getScenarioEliminationStatus,
+  buildScenarioResults,
+  computeScenarioSummaries,
   type PoolScoring,
   type StandingsEntry,
   type ScenarioData,
@@ -1946,5 +1948,327 @@ describe("getScenarioEliminationStatus", () => {
     );
     expect(result.get(0)).toBe(false);
     expect(result.get(1)).toBe(true);
+  });
+});
+
+describe("buildScenarioResults", () => {
+  const teamNames: Record<string, string> = {
+    teamA: "Duke",
+    teamB: "Houston",
+    teamC: "UConn",
+    teamD: "Auburn",
+  };
+
+  it("builds correct number of scenario results for championship only", () => {
+    const entries = [
+      { id: "e1", name: "Entry 1", totalPoints: 50 },
+      { id: "e2", name: "Entry 2", totalPoints: 40 },
+    ];
+    const scenarioData: ScenarioData = {
+      remainingGames: [
+        {
+          id: "champ",
+          round: "championship",
+          team1Id: "teamA",
+          team2Id: "teamB",
+          team1SourceGameId: null,
+          team2SourceGameId: null,
+        },
+      ],
+      entryPicks: {
+        e1: { champ: "teamA" },
+        e2: { champ: "teamB" },
+      },
+    };
+
+    const results = buildScenarioResults(
+      entries,
+      scenarioData,
+      DEFAULT_SCORING,
+      teamNames,
+    );
+    expect(results).toHaveLength(2);
+    expect(results[0].label).toContain("Duke");
+    expect(results[0].label).toContain("Houston");
+    expect(results[0].standings).toHaveLength(2);
+  });
+
+  it("generates descriptive labels with team names", () => {
+    const entries = [{ id: "e1", name: "Entry 1", totalPoints: 50 }];
+    const scenarioData: ScenarioData = {
+      remainingGames: [
+        {
+          id: "f4-1",
+          round: "final_four",
+          team1Id: "teamA",
+          team2Id: "teamB",
+          team1SourceGameId: null,
+          team2SourceGameId: null,
+        },
+        {
+          id: "champ",
+          round: "championship",
+          team1Id: null,
+          team2Id: "teamC",
+          team1SourceGameId: "f4-1",
+          team2SourceGameId: null,
+        },
+      ],
+      entryPicks: {
+        e1: { "f4-1": "teamA", champ: "teamA" },
+      },
+    };
+
+    const results = buildScenarioResults(
+      entries,
+      scenarioData,
+      DEFAULT_SCORING,
+      teamNames,
+    );
+    // Should have labels with "over" for F4 and "wins championship over" for champ
+    expect(results.some((r) => r.label.includes("over"))).toBe(true);
+  });
+
+  it("projects standings correctly — correct picks get points", () => {
+    const entries = [
+      { id: "e1", name: "Entry 1", totalPoints: 50 },
+      { id: "e2", name: "Entry 2", totalPoints: 40 },
+    ];
+    const scenarioData: ScenarioData = {
+      remainingGames: [
+        {
+          id: "champ",
+          round: "championship",
+          team1Id: "teamA",
+          team2Id: "teamB",
+          team1SourceGameId: null,
+          team2SourceGameId: null,
+        },
+      ],
+      entryPicks: {
+        e1: { champ: "teamA" },
+        e2: { champ: "teamB" },
+      },
+    };
+
+    const results = buildScenarioResults(
+      entries,
+      scenarioData,
+      DEFAULT_SCORING,
+      teamNames,
+    );
+
+    // Scenario where teamA wins: e1 gets 32 championship pts
+    const teamAWins = results.find((r) => r.scenario.get("champ") === "teamA")!;
+    const e1Standing = teamAWins.standings.find((s) => s.id === "e1")!;
+    const e2Standing = teamAWins.standings.find((s) => s.id === "e2")!;
+    expect(e1Standing.projectedPoints).toBe(82); // 50 + 32
+    expect(e2Standing.projectedPoints).toBe(40); // no points
+    expect(e1Standing.rank).toBe(1);
+    expect(e2Standing.rank).toBe(2);
+  });
+
+  it("marks tied entries correctly", () => {
+    const entries = [
+      { id: "e1", name: "Entry 1", totalPoints: 50 },
+      { id: "e2", name: "Entry 2", totalPoints: 50 },
+    ];
+    const scenarioData: ScenarioData = {
+      remainingGames: [
+        {
+          id: "champ",
+          round: "championship",
+          team1Id: "teamA",
+          team2Id: "teamB",
+          team1SourceGameId: null,
+          team2SourceGameId: null,
+        },
+      ],
+      entryPicks: {
+        e1: { champ: "teamA" },
+        e2: { champ: "teamA" },
+      },
+    };
+
+    const results = buildScenarioResults(
+      entries,
+      scenarioData,
+      DEFAULT_SCORING,
+      teamNames,
+    );
+    // When teamA wins, both get 82 pts — tied
+    const teamAWins = results.find((r) => r.scenario.get("champ") === "teamA")!;
+    expect(teamAWins.standings[0].rank).toBe(1);
+    expect(teamAWins.standings[1].rank).toBe(1);
+    // Both entries in the tie group should be marked
+    expect(teamAWins.standings[0].tiedOnPoints).toBe(true);
+    expect(teamAWins.standings[1].tiedOnPoints).toBe(true);
+  });
+});
+
+describe("computeScenarioSummaries", () => {
+  const teamNames: Record<string, string> = {
+    teamX: "Duke",
+    teamY: "Houston",
+  };
+
+  function makeResults(
+    entries: { id: string; name: string; totalPoints: number }[],
+    scenarioData: ScenarioData,
+  ) {
+    return buildScenarioResults(
+      entries,
+      scenarioData,
+      DEFAULT_SCORING,
+      teamNames,
+    );
+  }
+
+  it("computes best/worst finish across scenarios", () => {
+    const entries = [
+      { id: "e1", name: "Alpha", totalPoints: 50 },
+      { id: "e2", name: "Bravo", totalPoints: 40 },
+    ];
+    const scenarioData: ScenarioData = {
+      remainingGames: [
+        {
+          id: "champ",
+          round: "championship",
+          team1Id: "teamX",
+          team2Id: "teamY",
+          team1SourceGameId: null,
+          team2SourceGameId: null,
+        },
+      ],
+      entryPicks: {
+        e1: { champ: "teamX" },
+        e2: { champ: "teamY" },
+      },
+    };
+
+    const results = makeResults(entries, scenarioData);
+    const summaries = computeScenarioSummaries(
+      results,
+      entries.map((e) => ({
+        id: e.id,
+        name: e.name,
+        currentPoints: e.totalPoints,
+      })),
+      1,
+    );
+
+    // e1: wins when teamX wins (82 vs 40), loses when teamY wins (50 vs 72)
+    const e1 = summaries.find((s) => s.id === "e1")!;
+    expect(e1.bestFinish).toBe(1);
+    expect(e1.worstFinish).toBe(2);
+    expect(e1.scenariosInTopN).toBe(1);
+    expect(e1.totalScenarios).toBe(2);
+
+    // e2: wins when teamY wins, loses when teamX wins
+    const e2 = summaries.find((s) => s.id === "e2")!;
+    expect(e2.bestFinish).toBe(1);
+    expect(e2.worstFinish).toBe(2);
+    expect(e2.scenariosInTopN).toBe(1);
+  });
+
+  it("adapts to topN contention level", () => {
+    const entries = [
+      { id: "e1", name: "A", totalPoints: 80 },
+      { id: "e2", name: "B", totalPoints: 70 },
+      { id: "e3", name: "C", totalPoints: 60 },
+    ];
+    const scenarioData: ScenarioData = {
+      remainingGames: [
+        {
+          id: "champ",
+          round: "championship",
+          team1Id: "teamX",
+          team2Id: "teamY",
+          team1SourceGameId: null,
+          team2SourceGameId: null,
+        },
+      ],
+      entryPicks: {
+        e1: { champ: "teamX" },
+        e2: { champ: "teamX" },
+        e3: { champ: "teamY" },
+      },
+    };
+
+    const results = makeResults(entries, scenarioData);
+
+    // topN=1: only the entry in 1st counts
+    const top1 = computeScenarioSummaries(
+      results,
+      entries.map((e) => ({
+        id: e.id,
+        name: e.name,
+        currentPoints: e.totalPoints,
+      })),
+      1,
+    );
+    const e3Top1 = top1.find((s) => s.id === "e3")!;
+
+    // topN=2: e3 can finish top 2 when teamY wins (60+32=92 vs e1=80, e2=70)
+    const top2 = computeScenarioSummaries(
+      results,
+      entries.map((e) => ({
+        id: e.id,
+        name: e.name,
+        currentPoints: e.totalPoints,
+      })),
+      2,
+    );
+    const e3Top2 = top2.find((s) => s.id === "e3")!;
+    expect(e3Top2.scenariosInTopN).toBeGreaterThanOrEqual(
+      e3Top1.scenariosInTopN,
+    );
+  });
+
+  it("handles ties: tied entries both count as achieving that rank", () => {
+    const entries = [
+      { id: "e1", name: "A", totalPoints: 50 },
+      { id: "e2", name: "B", totalPoints: 50 },
+    ];
+    const scenarioData: ScenarioData = {
+      remainingGames: [
+        {
+          id: "champ",
+          round: "championship",
+          team1Id: "teamX",
+          team2Id: "teamY",
+          team1SourceGameId: null,
+          team2SourceGameId: null,
+        },
+      ],
+      entryPicks: {
+        e1: { champ: "teamX" },
+        e2: { champ: "teamX" },
+      },
+    };
+
+    const results = makeResults(entries, scenarioData);
+    const summaries = computeScenarioSummaries(
+      results,
+      entries.map((e) => ({
+        id: e.id,
+        name: e.name,
+        currentPoints: e.totalPoints,
+      })),
+      1,
+    );
+
+    // When teamX wins: both at 82, tied at rank 1
+    // When teamY wins: both at 50, tied at rank 1
+    // Both should count as finishing 1st in all scenarios
+    expect(summaries[0].scenariosInTopN).toBe(2);
+    expect(summaries[1].scenariosInTopN).toBe(2);
+    expect(summaries[0].bestFinish).toBe(1);
+    expect(summaries[1].bestFinish).toBe(1);
+  });
+
+  it("returns empty for no scenario results", () => {
+    const summaries = computeScenarioSummaries([], [], 1);
+    expect(summaries).toEqual([]);
   });
 });

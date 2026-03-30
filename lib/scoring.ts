@@ -176,7 +176,7 @@ export interface ScenarioData {
 }
 
 /** A single scenario: gameId → winnerId */
-type Scenario = Map<string, string>;
+export type Scenario = Map<string, string>;
 
 /**
  * Check if we're in "Final Four mode": all Elite 8 games are final and
@@ -250,6 +250,218 @@ export function generateScenarios(remainingGames: RemainingGame[]): Scenario[] {
   }
 
   return scenarios;
+}
+
+export interface ProjectedStanding {
+  id: string;
+  name: string;
+  projectedPoints: number;
+  currentPoints: number;
+  rank: number;
+  tiedOnPoints: boolean;
+}
+
+/**
+ * Project standings for a specific scenario outcome.
+ * Returns entries sorted and ranked by projected points.
+ * Ties are assigned the same rank with tiedOnPoints=true.
+ */
+function projectScenarioStandings<
+  T extends {
+    id: string;
+    name: string;
+    totalPoints: number;
+  },
+>(
+  entries: T[],
+  scenario: Scenario,
+  scenarioData: ScenarioData,
+  poolScoring: PoolScoring,
+): ProjectedStanding[] {
+  const gameRoundMap = new Map(
+    scenarioData.remainingGames.map((g) => [g.id, g.round]),
+  );
+
+  const projected = entries.map((entry) => {
+    const picks = scenarioData.entryPicks[entry.id] ?? {};
+    let score = entry.totalPoints;
+    for (const [gameId, winnerId] of scenario) {
+      const pickedTeamId = picks[gameId];
+      if (pickedTeamId === winnerId) {
+        const round = gameRoundMap.get(gameId);
+        if (round) {
+          score += getPointsForRound(round, poolScoring);
+        }
+      }
+    }
+    return {
+      id: entry.id,
+      name: entry.name,
+      projectedPoints: score,
+      currentPoints: entry.totalPoints,
+    };
+  });
+
+  // Sort by projected points desc, then name for deterministic order
+  projected.sort((a, b) => {
+    if (b.projectedPoints !== a.projectedPoints)
+      return b.projectedPoints - a.projectedPoints;
+    return a.name.localeCompare(b.name);
+  });
+
+  // Assign ranks — tied entries share the same rank
+  // First pass: assign ranks
+  const ranked: ProjectedStanding[] = [];
+  for (let i = 0; i < projected.length; i++) {
+    let rank = i + 1;
+    if (
+      i > 0 &&
+      projected[i].projectedPoints === projected[i - 1].projectedPoints
+    ) {
+      rank = ranked[i - 1].rank;
+    }
+    ranked.push({ ...projected[i], rank, tiedOnPoints: false });
+  }
+  // Second pass: mark ALL entries in a tie group (including the first)
+  for (let i = 0; i < ranked.length; i++) {
+    if (
+      (i > 0 && ranked[i].rank === ranked[i - 1].rank) ||
+      (i < ranked.length - 1 && ranked[i].rank === ranked[i + 1].rank)
+    ) {
+      ranked[i] = { ...ranked[i], tiedOnPoints: true };
+    }
+  }
+  return ranked;
+}
+
+export interface ScenarioResult {
+  scenario: Scenario;
+  label: string;
+  standings: ProjectedStanding[];
+}
+
+export interface ScenarioSummary {
+  id: string;
+  name: string;
+  currentPoints: number;
+  bestFinish: number;
+  worstFinish: number;
+  scenariosInTopN: number;
+  totalScenarios: number;
+}
+
+/**
+ * Build full scenario results: for each possible outcome, project standings.
+ */
+export function buildScenarioResults<
+  T extends {
+    id: string;
+    name: string;
+    totalPoints: number;
+  },
+>(
+  entries: T[],
+  scenarioData: ScenarioData,
+  poolScoring: PoolScoring,
+  teamNames: Record<string, string>,
+): ScenarioResult[] {
+  const scenarios = generateScenarios(scenarioData.remainingGames);
+  return scenarios.map((scenario) => ({
+    scenario,
+    label: getScenarioLabel(scenario, scenarioData.remainingGames, teamNames),
+    standings: projectScenarioStandings(
+      entries,
+      scenario,
+      scenarioData,
+      poolScoring,
+    ),
+  }));
+}
+
+/**
+ * Compute summary stats for each entry across all scenarios.
+ * For ties: if an entry is tied at a position <= topN, it counts as
+ * potentially finishing there (tiebreaker could go either way).
+ */
+export function computeScenarioSummaries(
+  scenarioResults: ScenarioResult[],
+  entryIds: { id: string; name: string; currentPoints: number }[],
+  topN: number,
+): ScenarioSummary[] {
+  if (scenarioResults.length === 0) return [];
+
+  const stats = new Map<
+    string,
+    { bestFinish: number; worstFinish: number; inTopN: number }
+  >();
+  for (const entry of entryIds) {
+    stats.set(entry.id, { bestFinish: Infinity, worstFinish: 0, inTopN: 0 });
+  }
+
+  for (const result of scenarioResults) {
+    for (const standing of result.standings) {
+      const s = stats.get(standing.id);
+      if (!s) continue;
+      if (standing.rank < s.bestFinish) s.bestFinish = standing.rank;
+      if (standing.rank > s.worstFinish) s.worstFinish = standing.rank;
+      if (standing.rank <= topN) s.inTopN++;
+    }
+  }
+
+  return entryIds.map((entry) => {
+    const s = stats.get(entry.id)!;
+    return {
+      id: entry.id,
+      name: entry.name,
+      currentPoints: entry.currentPoints,
+      bestFinish: s.bestFinish === Infinity ? entryIds.length : s.bestFinish,
+      worstFinish: s.worstFinish === 0 ? entryIds.length : s.worstFinish,
+      scenariosInTopN: s.inTopN,
+      totalScenarios: scenarioResults.length,
+    };
+  });
+}
+
+/**
+ * Generate a descriptive label for a scenario, e.g.
+ * "Duke over Houston, UConn over Auburn, Duke over UConn"
+ */
+function getScenarioLabel(
+  scenario: Scenario,
+  remainingGames: RemainingGame[],
+  teamNames: Record<string, string>,
+): string {
+  const parts: string[] = [];
+
+  const f4Games = remainingGames.filter((g) => g.round === "final_four");
+  const champGame = remainingGames.find((g) => g.round === "championship");
+
+  for (const game of f4Games) {
+    const winnerId = scenario.get(game.id);
+    if (!winnerId) continue;
+    const loserId = winnerId === game.team1Id ? game.team2Id : game.team1Id;
+    parts.push(
+      `${teamNames[winnerId] ?? "TBD"} over ${loserId ? (teamNames[loserId] ?? "TBD") : "TBD"}`,
+    );
+  }
+
+  if (champGame) {
+    const winnerId = scenario.get(champGame.id);
+    if (winnerId) {
+      const champTeam1 = champGame.team1SourceGameId
+        ? (scenario.get(champGame.team1SourceGameId) ?? champGame.team1Id)
+        : champGame.team1Id;
+      const champTeam2 = champGame.team2SourceGameId
+        ? (scenario.get(champGame.team2SourceGameId) ?? champGame.team2Id)
+        : champGame.team2Id;
+      const loserId = winnerId === champTeam1 ? champTeam2 : champTeam1;
+      parts.push(
+        `${teamNames[winnerId] ?? "TBD"} wins championship over ${loserId ? (teamNames[loserId] ?? "TBD") : "TBD"}`,
+      );
+    }
+  }
+
+  return parts.join(", ");
 }
 
 /**

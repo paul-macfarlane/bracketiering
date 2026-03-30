@@ -42,7 +42,7 @@ import { MemberList } from "./members/member-list";
 import { SentInvitesList } from "./members/sent-invites-list";
 import { CreateBracketDialog } from "./brackets/create-bracket-dialog";
 import { BracketEntryRow } from "./brackets/bracket-entry-row";
-import { StandingsTable } from "@/components/pool/standings-table";
+import { PoolStandingsSection } from "@/components/pool/pool-standings-section";
 import { WhatINeedCard } from "@/components/pool/what-i-need-card";
 import { PageBreadcrumbs } from "@/components/page-breadcrumbs";
 import { StickySubHeader } from "@/components/sticky-sub-header";
@@ -270,28 +270,18 @@ export default async function PoolDetailPage({
         </div>
       )}
 
-      {/* Standings — front and center */}
+      {/* Standings + Scenario Simulator */}
       {activeTournament && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Standings</CardTitle>
-            <CardDescription>
-              {standings.length} bracket{standings.length !== 1 ? "s" : ""} in
-              this pool
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <StandingsTable
-              standings={standings}
-              poolId={id}
-              tournamentStarted={tournamentStarted}
-              movement={movementData}
-              currentUserId={session.user.id}
-              scenarioData={scenarioData}
-              poolScoring={poolScoring}
-            />
-          </CardContent>
-        </Card>
+        <PoolStandingsSection
+          standings={standings}
+          poolId={id}
+          tournamentStarted={tournamentStarted}
+          movement={movementData}
+          currentUserId={session.user.id}
+          scenarioData={scenarioData}
+          poolScoring={poolScoring}
+          teamMap={teamMapForClient}
+        />
       )}
 
       {/* What I Need */}
