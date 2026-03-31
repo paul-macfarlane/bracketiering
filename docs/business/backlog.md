@@ -1200,6 +1200,32 @@ Stories below are ordered by priority. Completed stories are grouped at the end.
 
 ---
 
+### 85. Update Marketing Page, Privacy Policy & Terms of Service (Non-MVP) ✅ — Epic: Branding
+
+**As a** visitor or user, **I want** the marketing page to showcase Bracketsball's latest differentiating features, and the privacy policy and terms of service to reflect any changes since they were last updated **so that** new visitors understand the full value of the app and legal pages stay accurate.
+
+**Acceptance Criteria:**
+
+- **Marketing page updates:**
+  - Add a feature highlight for the **Final Four Scenario Simulator** — enumerate every possible outcome and see projected standings for each scenario
+  - Add a feature highlight for **Scenario-Aware Elimination** — know exactly when a bracket is mathematically eliminated, accounting for correlated picks
+  - Add a feature highlight for the **"What I Need" Rooting Guide** — personalized breakdown of which teams to root for in every game and why
+  - Add a feature highlight for **Standings Movement Tracking** — see who is surging or falling round over round
+  - Add a feature highlight for **Bracket Connector Lines** — classic bracket visualization with color-coded correct/incorrect paths
+  - Add a feature highlight for **Per-Game & Round-Level Potential Points** — see exactly where your upside lies at a glance
+  - Review existing feature copy for accuracy and update if needed (e.g., auto-fill now has multiple stat-based presets)
+  - Maintain the existing comparison section vs. big apps (ESPN, Yahoo) — update differentiators if new features strengthen the case
+  - Ensure new sections are responsive and consistent with the current marketing page design
+- **Privacy policy review:**
+  - Review `/privacy` for accuracy given current data practices — update if any new data collection, third-party integrations, or processing has been introduced since the last update (March 8, 2026)
+  - Update the "last updated" date if changes are made
+- **Terms of service review:**
+  - Review `/terms` for accuracy — update if new features introduce terms that should be covered (e.g., scenario simulator, public pools)
+  - Update the "last updated" date if changes are made
+- No changes are required to privacy/terms if they are still accurate — the review itself satisfies the acceptance criteria
+
+---
+
 ### 76. Fix My Brackets Mobile Responsive Layout (Non-MVP) — Epic: Bug Fixes
 
 **As a** pool member on mobile, **I want** the "My Brackets" section to display without overlapping text when the tournament has started **so that** I can read my bracket placement, points, and status clearly on small screens.
@@ -1407,5 +1433,6 @@ Stories below are ordered by priority. Completed stories are grouped at the end.
 | 82  | Scenario-Aware Elimination Detection      | Tournament Experience   | No  | Done   |
 | 83  | Final Four Scenario Simulator             | Tournament Experience   | No  | Done   |
 | 84  | Scenario Simulator UX Improvements        | Tournament Experience   | No  | Done   |
+| 85  | Update Marketing, Privacy & Terms         | Branding                | No  | Done   |
 
-**MVP Total: 21 stories (21 done, 0 remaining)** | **Post-MVP: 62 stories (46 done, 16 remaining)**
+**MVP Total: 21 stories (21 done, 0 remaining)** | **Post-MVP: 63 stories (47 done, 16 remaining)**
