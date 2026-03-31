@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ContentionToggle } from "@/components/pool/contention-toggle";
 import { TeamLogo } from "@/components/team-logo";
 import {
   buildScenarioResults,
@@ -43,7 +44,6 @@ interface ScenarioSimulatorCardProps {
   standings: StandingsEntryInput[];
   scenarioData: ScenarioData;
   poolScoring: PoolScoring;
-  topN: 1 | 2 | 3;
   teamMap: Record<string, TeamMapEntry>;
   poolId: string;
   currentUserId?: string;
@@ -55,12 +55,14 @@ export function ScenarioSimulatorCard({
   standings,
   scenarioData,
   poolScoring,
-  topN,
   teamMap,
   poolId,
   currentUserId,
 }: ScenarioSimulatorCardProps) {
-  const [expandedScenario, setExpandedScenario] = useState<number | null>(null);
+  const [topN, setTopN] = useState<1 | 2 | 3>(1);
+  const [expandedScenarios, setExpandedScenarios] = useState<Set<number>>(
+    new Set(),
+  );
   const [showAll, setShowAll] = useState(false);
 
   // Build entry ID → userId lookup for highlighting current user
@@ -133,6 +135,9 @@ export function ScenarioSimulatorCard({
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Contention toggle */}
+        <ContentionToggle value={topN} onChange={setTopN} className="mb-4" />
+
         {/* Summary Table */}
         <SummaryTable
           summaries={visibleSummaries}
@@ -165,9 +170,14 @@ export function ScenarioSimulatorCard({
                 key={i}
                 index={i}
                 result={result}
-                expanded={expandedScenario === i}
+                expanded={expandedScenarios.has(i)}
                 onToggle={() =>
-                  setExpandedScenario(expandedScenario === i ? null : i)
+                  setExpandedScenarios((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(i)) next.delete(i);
+                    else next.add(i);
+                    return next;
+                  })
                 }
                 teamMap={teamMap}
                 poolId={poolId}

@@ -1306,6 +1306,19 @@ Stories below are ordered by priority. Completed stories are grouped at the end.
 
 ---
 
+### 84. Scenario Simulator UX Improvements (Non-MVP) — Epic: Tournament Experience
+
+**As a** pool member, **I want** to open multiple scenario breakdowns at once and filter contention independently between standings and the scenario simulator **so that** I can compare scenarios side-by-side and view different contention levels in each section without them interfering with each other.
+
+**Acceptance Criteria:**
+
+- **Multi-open scenario accordions**: users can expand multiple scenario detail sections simultaneously in the scenario simulator (currently only one can be open at a time)
+- **Independent contention filters**: the standings section and the scenario simulator section each have their own contention filter (1st, Top 2, Top 3) that operate independently — changing one does not affect the other
+- **Default behavior**: both filters default to the same value they do today (1st place contention)
+- **Responsive**: both changes work correctly on desktop and mobile layouts
+
+---
+
 ## Summary
 
 | #   | Story                                     | Epic                    | MVP | Status |
@@ -1393,5 +1406,6 @@ Stories below are ordered by priority. Completed stories are grouped at the end.
 | 81  | Fix "Picked to" Off-by-One in What I Need | Bug Fixes               | No  | Done   |
 | 82  | Scenario-Aware Elimination Detection      | Tournament Experience   | No  | Done   |
 | 83  | Final Four Scenario Simulator             | Tournament Experience   | No  | Done   |
+| 84  | Scenario Simulator UX Improvements        | Tournament Experience   | No  | Done   |
 
-**MVP Total: 21 stories (21 done, 0 remaining)** | **Post-MVP: 61 stories (45 done, 16 remaining)**
+**MVP Total: 21 stories (21 done, 0 remaining)** | **Post-MVP: 62 stories (46 done, 16 remaining)**

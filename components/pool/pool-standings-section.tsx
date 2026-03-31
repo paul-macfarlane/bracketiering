@@ -100,7 +100,6 @@ export function PoolStandingsSection({
           standings={standings}
           scenarioData={scenarioData}
           poolScoring={poolScoring}
-          topN={topN}
           teamMap={teamMap}
           poolId={poolId}
           currentUserId={currentUserId}

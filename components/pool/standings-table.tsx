@@ -16,6 +16,7 @@ import { UserDisplay } from "@/components/user-display";
 import { TeamLogo } from "@/components/team-logo";
 import { EliminationBadge } from "@/components/pool/elimination-badge";
 import { MovementIndicator } from "@/components/pool/movement-indicator";
+import { ContentionToggle } from "@/components/pool/contention-toggle";
 import {
   getEliminationStatus,
   getScenarioEliminationStatus,
@@ -115,25 +116,7 @@ export function StandingsTable({
     <>
       {/* Contention toggle */}
       {tournamentStarted && (
-        <div className="mb-3 flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Contention:</span>
-          <div className="inline-flex rounded-md border border-border">
-            {([1, 2, 3] as const).map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setTopN(n)}
-                className={`px-2.5 py-1 text-xs font-medium transition-colors first:rounded-l-md last:rounded-r-md ${
-                  topN === n
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted"
-                }`}
-              >
-                {n === 1 ? "1st" : `Top ${n}`}
-              </button>
-            ))}
-          </div>
-        </div>
+        <ContentionToggle value={topN} onChange={setTopN} className="mb-3" />
       )}
 
       {/* Desktop table */}
