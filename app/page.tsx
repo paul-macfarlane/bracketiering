@@ -15,6 +15,11 @@ import {
   X,
   Heart,
   ShieldCheck,
+  GitBranch,
+  Target,
+  Compass,
+  TrendingUp,
+  Sparkles,
 } from "lucide-react";
 
 import { auth } from "@/lib/auth";
@@ -46,6 +51,11 @@ function JsonLd() {
       "Custom scoring rules",
       "Stats-based bracket generation",
       "Multiple brackets per pool",
+      "Final Four scenario simulator",
+      "Scenario-aware elimination tracking",
+      "Personalized rooting guide",
+      "Standings movement tracking",
+      "Per-game potential points",
     ],
   };
 
@@ -165,6 +175,18 @@ export default async function Home() {
                   them={false}
                 />
                 <ComparisonRow
+                  feature="Scenario simulator"
+                  detail="See every possible Final Four outcome"
+                  us={true}
+                  them={false}
+                />
+                <ComparisonRow
+                  feature="Smart elimination tracking"
+                  detail="Accounts for correlated picks"
+                  us={true}
+                  them={false}
+                />
+                <ComparisonRow
                   feature="No ads or data selling"
                   detail="Indie-built, not corporate"
                   us={true}
@@ -211,7 +233,7 @@ export default async function Home() {
               </p>
               <ul className="mt-6 space-y-3">
                 <StatFeature text="10 stat categories with custom weights" />
-                <StatFeature text="Presets: Offense-Heavy, Defense-Heavy, Balanced, Hustle" />
+                <StatFeature text="7 presets: Offense, Defense, BPI, SOS, Analytics, and more" />
                 <StatFeature text="Chaos control: pick your upset frequency" />
                 <StatFeature text="Or go manual — every pick auto-saves" />
               </ul>
@@ -259,6 +281,79 @@ export default async function Home() {
               icon={<Users className="h-6 w-6 text-brand-orange" />}
               title="Built for Groups"
               description="Pools of 2 to 100. Private by default. Made for the office pool, the family rivalry, the friend group."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Scenario Simulator Spotlight */}
+      <section className="bg-secondary px-4 py-20 md:py-28">
+        <div className="container mx-auto max-w-5xl">
+          <div className="grid items-center gap-12 md:grid-cols-2">
+            <div>
+              <h2 className="font-heading text-3xl font-bold uppercase tracking-wide md:text-4xl">
+                Every Outcome.
+                <br />
+                <span className="text-brand-orange">Calculated.</span>
+              </h2>
+              <p className="mt-4 text-muted-foreground">
+                Once the Final Four is set, our scenario simulator enumerates
+                every possible tournament outcome and shows you the projected
+                standings for each one. No guesswork — just math.
+              </p>
+              <ul className="mt-6 space-y-3">
+                <StatFeature text="All possible outcomes mapped (up to 8 scenarios)" />
+                <StatFeature text="Projected standings for every scenario" />
+                <StatFeature text="Best and worst possible finish for each bracket" />
+                <StatFeature text="Filter by contention level: 1st, Top 2, Top 3" />
+              </ul>
+            </div>
+            <div className="rounded-xl border bg-card p-6">
+              <ScenarioPreview />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Tournament Experience */}
+      <section className="px-4 py-20 md:py-28">
+        <div className="container mx-auto max-w-5xl">
+          <h2 className="font-heading text-center text-3xl font-bold uppercase tracking-wide md:text-4xl">
+            Stay in It All Tournament Long
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
+            Features that keep you engaged from tip-off to the final buzzer.
+          </p>
+          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <FeatureCard
+              icon={<Target className="h-6 w-6 text-brand-orange" />}
+              title="Elimination Tracking"
+              description="Know exactly when a bracket is mathematically eliminated — accounting for correlated picks, not just simple math."
+            />
+            <FeatureCard
+              icon={<Compass className="h-6 w-6 text-brand-orange" />}
+              title="Who to Root For"
+              description="A personalized guide showing which teams you need to win in every game, and how many points are at stake."
+            />
+            <FeatureCard
+              icon={<TrendingUp className="h-6 w-6 text-brand-orange" />}
+              title="Standings Movement"
+              description="See who surged and who dropped round over round with position change indicators on every bracket."
+            />
+            <FeatureCard
+              icon={<Sparkles className="h-6 w-6 text-brand-orange" />}
+              title="Potential Points"
+              description="Per-game and per-round breakdowns of earned, remaining, and lost points so you know exactly where your upside is."
+            />
+            <FeatureCard
+              icon={<GitBranch className="h-6 w-6 text-brand-orange" />}
+              title="Classic Bracket Lines"
+              description="Color-coded connector lines trace each team's path — green for correct picks, red for busted ones."
+            />
+            <FeatureCard
+              icon={<Trophy className="h-6 w-6 text-brand-orange" />}
+              title="Champion Tracking"
+              description="See every bracket's champion pick at a glance on standings, with a red X when that team gets knocked out."
             />
           </div>
         </div>
@@ -511,6 +606,72 @@ function StatsPreview() {
           </span>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ScenarioPreview() {
+  const scenarios = [
+    {
+      label: "Duke over Houston, UConn over Auburn, Duke over UConn",
+      results: [
+        { name: "Paul's Bracket", rank: "1st", pts: 94 },
+        { name: "Sarah's Picks", rank: "2nd", pts: 88 },
+        { name: "Mike's Upsets", rank: "3rd", pts: 82 },
+      ],
+    },
+    {
+      label: "Houston over Duke, Auburn over UConn, Houston over Auburn",
+      results: [
+        { name: "Sarah's Picks", rank: "1st", pts: 96 },
+        { name: "Mike's Upsets", rank: "2nd", pts: 86 },
+        { name: "Paul's Bracket", rank: "3rd", pts: 78 },
+      ],
+    },
+  ];
+
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <span className="font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          Scenario Simulator
+        </span>
+        <span className="rounded-full bg-brand-orange/10 px-3 py-1 text-xs font-medium text-brand-orange">
+          Final Four
+        </span>
+      </div>
+      <div className="space-y-4">
+        {scenarios.map((scenario, i) => (
+          <div key={i} className="rounded-lg border bg-background p-3">
+            <p className="mb-2 text-xs font-medium text-muted-foreground">
+              Scenario {i + 1}: {scenario.label}
+            </p>
+            <div className="space-y-1">
+              {scenario.results.map((r) => (
+                <div
+                  key={r.name}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={`text-xs font-bold ${r.rank === "1st" ? "text-brand-orange" : "text-muted-foreground"}`}
+                    >
+                      {r.rank}
+                    </span>
+                    <span>{r.name}</span>
+                  </span>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {r.pts} pts
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-center text-xs text-muted-foreground">
+        2 of 8 scenarios shown
+      </p>
     </div>
   );
 }
