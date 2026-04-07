@@ -193,6 +193,17 @@ export async function updateTournamentTeamStats(
   return result ?? null;
 }
 
+export async function isTournamentComplete(
+  tournamentId: string,
+): Promise<boolean> {
+  const games = await db
+    .select({ status: tournamentGame.status })
+    .from(tournamentGame)
+    .where(eq(tournamentGame.tournamentId, tournamentId));
+  if (games.length === 0) return false;
+  return games.every((g) => g.status === "final");
+}
+
 export async function getTournamentGames(tournamentId: string) {
   return db
     .select({

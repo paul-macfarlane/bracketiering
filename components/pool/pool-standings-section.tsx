@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { StandingsTable } from "@/components/pool/standings-table";
 import { ScenarioSimulatorCard } from "@/components/pool/scenario-simulator-card";
+import { TournamentPodium } from "@/components/pool/tournament-podium";
 import type { ScenarioData, PoolScoring } from "@/lib/scoring";
 
 interface MovementData {
@@ -51,6 +52,7 @@ interface PoolStandingsSectionProps {
   standings: StandingsEntry[];
   poolId: string;
   tournamentStarted: boolean;
+  tournamentComplete?: boolean;
   movement?: Record<string, MovementData>;
   currentUserId: string;
   scenarioData: ScenarioData | null;
@@ -62,6 +64,7 @@ export function PoolStandingsSection({
   standings,
   poolId,
   tournamentStarted,
+  tournamentComplete = false,
   movement,
   currentUserId,
   scenarioData,
@@ -70,11 +73,19 @@ export function PoolStandingsSection({
 }: PoolStandingsSectionProps) {
   const [topN, setTopN] = useState<1 | 2 | 3>(1);
 
+  const topThree = tournamentComplete ? standings.slice(0, 3) : [];
+
   return (
     <>
+      {tournamentComplete && topThree.length > 0 && (
+        <TournamentPodium topThree={topThree} poolId={poolId} />
+      )}
+
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Standings</CardTitle>
+          <CardTitle>
+            {tournamentComplete ? "Final Standings" : "Standings"}
+          </CardTitle>
           <CardDescription>
             {standings.length} bracket{standings.length !== 1 ? "s" : ""} in
             this pool
@@ -85,6 +96,7 @@ export function PoolStandingsSection({
             standings={standings}
             poolId={poolId}
             tournamentStarted={tournamentStarted}
+            tournamentComplete={tournamentComplete}
             movement={movement}
             currentUserId={currentUserId}
             scenarioData={scenarioData}
@@ -95,7 +107,7 @@ export function PoolStandingsSection({
         </CardContent>
       </Card>
 
-      {scenarioData && (
+      {!tournamentComplete && scenarioData && (
         <ScenarioSimulatorCard
           standings={standings}
           scenarioData={scenarioData}

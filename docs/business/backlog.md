@@ -1434,5 +1434,6 @@ Stories below are ordered by priority. Completed stories are grouped at the end.
 | 83  | Final Four Scenario Simulator             | Tournament Experience   | No  | Done   |
 | 84  | Scenario Simulator UX Improvements        | Tournament Experience   | No  | Done   |
 | 85  | Update Marketing, Privacy & Terms         | Branding                | No  | Done   |
+| 86  | Tournament Complete Podium & Post-Tourney UX | Tournament Experience | No  | Done   |
 
-**MVP Total: 21 stories (21 done, 0 remaining)** | **Post-MVP: 63 stories (47 done, 16 remaining)**
+**MVP Total: 21 stories (21 done, 0 remaining)** | **Post-MVP: 64 stories (48 done, 16 remaining)**

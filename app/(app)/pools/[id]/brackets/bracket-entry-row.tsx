@@ -48,6 +48,7 @@ interface BracketEntryRowProps {
   };
   poolId: string;
   tournamentStarted: boolean;
+  tournamentComplete?: boolean;
   canDuplicate: boolean;
   championPick: {
     teamShortName: string;
@@ -69,6 +70,7 @@ export function BracketEntryRow({
   entry,
   poolId,
   tournamentStarted,
+  tournamentComplete = false,
   canDuplicate,
   championPick,
   isChampionEliminated = false,
@@ -159,9 +161,11 @@ export function BracketEntryRow({
                 </span>
                 <span className="text-muted-foreground"> pts</span>
               </span>
-              <span className="text-muted-foreground">
-                {standingsInfo.potentialPoints} potential
-              </span>
+              {!tournamentComplete && (
+                <span className="text-muted-foreground">
+                  {standingsInfo.potentialPoints} potential
+                </span>
+              )}
             </div>
           )}
           {!tournamentStarted && (
