@@ -55,6 +55,7 @@ interface StandingsTableProps {
   standings: StandingsEntry[];
   poolId: string;
   tournamentStarted?: boolean;
+  tournamentComplete?: boolean;
   movement?: Record<string, MovementData>;
   currentUserId?: string;
   scenarioData?: ScenarioData | null;
@@ -67,6 +68,7 @@ export function StandingsTable({
   standings,
   poolId,
   tournamentStarted = false,
+  tournamentComplete = false,
   movement,
   currentUserId,
   scenarioData,
@@ -115,7 +117,7 @@ export function StandingsTable({
   return (
     <>
       {/* Contention toggle */}
-      {tournamentStarted && (
+      {tournamentStarted && !tournamentComplete && (
         <ContentionToggle value={topN} onChange={setTopN} className="mb-3" />
       )}
 
@@ -141,17 +143,19 @@ export function StandingsTable({
                   <ArrowUpDown className="h-3 w-3" />
                 </button>
               </TableHead>
-              <TableHead className="w-24 text-right">
-                <button
-                  type="button"
-                  onClick={() => handleSort("potential")}
-                  className="inline-flex items-center gap-1 hover:text-foreground"
-                >
-                  Potential
-                  <ArrowUpDown className="h-3 w-3" />
-                </button>
-              </TableHead>
-              {tournamentStarted && (
+              {!tournamentComplete && (
+                <TableHead className="w-24 text-right">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("potential")}
+                    className="inline-flex items-center gap-1 hover:text-foreground"
+                  >
+                    Potential
+                    <ArrowUpDown className="h-3 w-3" />
+                  </button>
+                </TableHead>
+              )}
+              {tournamentStarted && !tournamentComplete && (
                 <TableHead className="w-28 text-center">Status</TableHead>
               )}
             </TableRow>
@@ -163,10 +167,15 @@ export function StandingsTable({
               return (
                 <TableRow
                   key={entry.id}
-                  className={`${isEliminated ? "opacity-60" : ""} ${isCurrentUser ? "bg-primary/5" : ""}`}
+                  className={`${isEliminated && !(tournamentComplete && entry.rank <= 3) ? "opacity-60" : ""} ${isCurrentUser ? "bg-primary/5" : ""}`}
                 >
                   <TableCell className="font-medium text-muted-foreground">
-                    {entry.rank}
+                    <span className="inline-flex items-center gap-1">
+                      {tournamentComplete && entry.rank <= 3 && (
+                        <RankMedal rank={entry.rank} />
+                      )}
+                      {entry.rank}
+                    </span>
                   </TableCell>
                   {movement && (
                     <TableCell className="text-center">
@@ -204,10 +213,12 @@ export function StandingsTable({
                   <TableCell className="text-right font-semibold">
                     {entry.totalPoints}
                   </TableCell>
-                  <TableCell className="text-right text-muted-foreground">
-                    {entry.potentialPoints}
-                  </TableCell>
-                  {tournamentStarted && (
+                  {!tournamentComplete && (
+                    <TableCell className="text-right text-muted-foreground">
+                      {entry.potentialPoints}
+                    </TableCell>
+                  )}
+                  {tournamentStarted && !tournamentComplete && (
                     <TableCell className="text-center">
                       <EliminationBadge isEliminated={isEliminated} />
                     </TableCell>
@@ -229,10 +240,13 @@ export function StandingsTable({
               key={entry.id}
               href={`/pools/${poolId}/brackets/${entry.id}`}
               className={`flex items-center gap-2.5 rounded-md px-2 py-2 transition-colors active:bg-muted ${
-                isEliminated ? "opacity-60" : ""
+                isEliminated && !(tournamentComplete && entry.rank <= 3) ? "opacity-60" : ""
               } ${isCurrentUser ? "bg-primary/5" : ""}`}
             >
               <div className="flex w-10 shrink-0 flex-col items-center">
+                {tournamentComplete && entry.rank <= 3 && (
+                  <RankMedal rank={entry.rank} />
+                )}
                 <span className="text-sm font-bold text-muted-foreground">
                   {entry.rank}
                 </span>
@@ -254,16 +268,18 @@ export function StandingsTable({
                   <span className="truncate text-xs text-muted-foreground">
                     {entry.userName}
                   </span>
-                  {tournamentStarted && (
+                  {tournamentStarted && !tournamentComplete && (
                     <EliminationBadge isEliminated={isEliminated} />
                   )}
                 </div>
               </div>
               <div className="shrink-0 text-right">
                 <div className="text-sm font-semibold">{entry.totalPoints}</div>
-                <div className="text-xs text-muted-foreground">
-                  {entry.potentialPoints}
-                </div>
+                {!tournamentComplete && (
+                  <div className="text-xs text-muted-foreground">
+                    {entry.potentialPoints}
+                  </div>
+                )}
               </div>
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
             </Link>
@@ -272,6 +288,18 @@ export function StandingsTable({
       </div>
     </>
   );
+}
+
+const MEDAL_COLORS: Record<number, string> = {
+  1: "text-medal-gold",
+  2: "text-medal-silver",
+  3: "text-medal-bronze",
+} as const;
+
+function RankMedal({ rank }: { rank: number }) {
+  const color = MEDAL_COLORS[rank];
+  if (!color) return null;
+  return <Trophy className={`h-4 w-4 ${color}`} />;
 }
 
 function ChampionDisplay({

@@ -18,6 +18,7 @@ import {
   getActiveTournament,
   getTournamentGames,
   getTournamentTeams,
+  isTournamentComplete,
 } from "@/lib/db/queries/tournaments";
 import {
   hasTournamentStarted,
@@ -123,9 +124,12 @@ export default async function PoolDetailPage({
     scoringChampionship: poolData.pool.scoringChampionship,
   };
 
-  const standingsResult = activeTournament
-    ? await getPoolStandings(id, activeTournament.id, poolScoring)
-    : null;
+  const [standingsResult, tournamentComplete] = await Promise.all([
+    activeTournament
+      ? getPoolStandings(id, activeTournament.id, poolScoring)
+      : null,
+    activeTournament ? isTournamentComplete(activeTournament.id) : false,
+  ]);
   const standings = standingsResult?.standings ?? [];
   const scenarioData = standingsResult?.scenarioData ?? null;
 
@@ -264,7 +268,7 @@ export default async function PoolDetailPage({
         </div>
       </StickySubHeader>
 
-      {bracketLockTime && (
+      {bracketLockTime && !tournamentComplete && (
         <div className="mb-6">
           <CountdownTimer lockTime={bracketLockTime.toISOString()} />
         </div>
@@ -276,6 +280,7 @@ export default async function PoolDetailPage({
           standings={standings}
           poolId={id}
           tournamentStarted={tournamentStarted}
+          tournamentComplete={tournamentComplete}
           movement={movementData}
           currentUserId={session.user.id}
           scenarioData={scenarioData}
@@ -285,15 +290,18 @@ export default async function PoolDetailPage({
       )}
 
       {/* What I Need */}
-      {activeTournament && tournamentStarted && submittedEntries.length > 0 && (
-        <WhatINeedCard
-          brackets={bracketOptions}
-          picksByBracket={picksByBracket}
-          games={gamesForClient}
-          poolScoring={poolScoring}
-          teamMap={teamMapForClient}
-        />
-      )}
+      {activeTournament &&
+        tournamentStarted &&
+        !tournamentComplete &&
+        submittedEntries.length > 0 && (
+          <WhatINeedCard
+            brackets={bracketOptions}
+            picksByBracket={picksByBracket}
+            games={gamesForClient}
+            poolScoring={poolScoring}
+            teamMap={teamMapForClient}
+          />
+        )}
 
       {/* My Brackets */}
       <Card>
@@ -325,6 +333,7 @@ export default async function PoolDetailPage({
                   entry={entry}
                   poolId={id}
                   tournamentStarted={tournamentStarted}
+                  tournamentComplete={tournamentComplete}
                   canDuplicate={canCreateBracket}
                   championPick={championPicks.get(entry.id) ?? null}
                   isChampionEliminated={
